@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-styles": "^4.0.0"
+  }
+}

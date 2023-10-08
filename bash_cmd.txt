@@ -1,0 +1,8 @@
+Rename file, useful to work with .chalice in SageMaker studio to rename to file "chalice" for changing directory contents and then change back to .chalice before deploy
+mv old_filename new_filename
+
+Copy file
+cp source destination
+
+Copy directory
+cp -r source_dir destination
