@@ -7,11 +7,14 @@ from utils import bedrock
 from datetime import datetime
 import pandas as pd
 import logging
+import utils.authenticate as auth
 
 st.set_page_config(
     page_title="Summarize Product Reviews",
     page_icon="🛒",
 )
+
+auth.check_login()
 
 # Read the CSV file
 @st.cache_data

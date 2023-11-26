@@ -3,11 +3,14 @@ from utils.studio_style import apply_studio_style
 from utils.studio_style import keyword_label
 from utils import bedrock
 import logging
+import utils.authenticate as auth
 
 st.set_page_config(
     page_title="Generate Product Descriptions",
     page_icon="🛒",
 )
+
+auth.check_login()
 
 def generate_description(product_name, product_features, persona = None):
     
