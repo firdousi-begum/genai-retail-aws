@@ -13,26 +13,11 @@ st.set_page_config(
     page_icon="🛒",
 )
 
-st.title("Summarize Product Reviews")
-#modelId = 'amazon.titan-tg1-xlarge'
-#modelId = 'anthropic.claude-v1'
-modelId = 'anthropic.claude-instant-v1'
-
 # Read the CSV file
 @st.cache_data
 def load_data():
     data = pd.read_csv("./data/amazon_vfl_reviews.csv")
     return data
-
-data = load_data()
-
-# Get unique product names
-unique_products = data['name'].unique()
-
-keywords = [f'Model Id: {modelId}','Amazon Bedrock API', 'Langchain']
-formatted_labels = [keyword_label(keyword) for keyword in keywords]
-st.write(' '.join(formatted_labels), unsafe_allow_html=True)
-apply_studio_style()
 
 # Your content and interactive elements for the Summarize Product Reviews page
 
@@ -87,23 +72,24 @@ def generate_review_summary (product_reviews, product_name):
     summary = langchain.summarize_long_text(product_reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, map_prompt, combine_prompt)
     return summary
 
+def style_figure_text(text):
+    return f'<div style="font-style:italic; font-size: 0.875em; text-align:center">{text}</div>'
 
-# Add a description for this specific use case
-st.markdown(
-    '''
-    #### Use Case: 
-    ###### Efficiently tackle the challenges of handling extensive product reviews with advanced summarization technique. 
-    You can access the dataset used for this demo on Kaggle using the following link:
-    [Indian Products on Amazon](https://www.kaggle.com/datasets/nehaprabhavalkar/indian-products-on-amazon?resource=download)
+def load_demo():
+    # Add a description for this specific use case
+    st.markdown(
+        '''
+        #### Use Case: 
+        ###### Efficiently tackle the challenges of handling extensive product reviews with advanced summarization technique. 
+        You can access the dataset used for this demo on Kaggle using the following link:
+        [Indian Products on Amazon](https://www.kaggle.com/datasets/nehaprabhavalkar/indian-products-on-amazon?resource=download)
 
-    1. **Product**: Select a product to summarize reviews for.
-    2. **Summarize Reviews**: Get Summary of reviews for the product. It will both summarize long product reviews, tell the sentiment & extract important keywords.
+        1. **Product**: Select a product to summarize reviews for.
+        2. **Summarize Reviews**: Get Summary of reviews for the product. It will both summarize long product reviews, tell the sentiment & extract important keywords.
 
-    This architecture effective in summarizing diverse types of content, including call transcripts, meeting notes, books, articles, blog posts, and other relevant textual content. Whether you're dealing with customer feedback, evaluating product sentiment, or conducting in-depth analysis, our summarization technique can enhance your insights and decision-making processes.
-    '''
-)
-
-def main():
+        This architecture effective in summarizing diverse types of content, including call transcripts, meeting notes, books, articles, blog posts, and other relevant textual content. Whether you're dealing with customer feedback, evaluating product sentiment, or conducting in-depth analysis, our summarization technique can enhance your insights and decision-making processes.
+        '''
+    )
     # Dropdown to select a product
     selected_product = st.selectbox("Select Product for summarizing reviews:", [None] + list(unique_products), index=0)
 
@@ -156,6 +142,56 @@ def main():
     else:
         st.info("Select a product to view its reviews.")
 
+@st.cache_data
+def load_arch():
+    st.write()
+
+    st.image('data/architecture/reviews_1.png')
+    st.markdown(
+        '''
+        When we work with large documents, we can face some challenges as the input text might not fit into the model context length, or the model hallucinates with large documents, or, out of memory errors, etc.
+
+        To solve those problems, we are going to show an architecture that is based on the concept of chunking and chaining prompts. This architecture is leveraging [LangChain](https://python.langchain.com/docs/get_started/introduction.html) which is a popular framework for developing applications powered by language models.
+        '''
+    )
+    st.image('data/architecture/reviews_2.png')
+    st.markdown(
+        '''
+        In this architecture:
+
+        1. A large document (or a giant file appending small ones) is loaded
+        2. Langchain utility is used to split it into multiple smaller chunks (chunking)
+        3. First chunk is sent to the model; Model returns the corresponding summary
+        4. Langchain gets next chunk and appends it to the returned summary and sends the combined text as a new request to the model; the process repeats until all chunks are processed
+        5. In the end, you have final summary based on entire content.
+
+        '''
+    )
+    st.markdown(
+        '''
+        **LangChain** `load_summarize_chain` provides three ways of summarization:
+        1. `stuff` puts all the chunks into one prompt. Thus, this would hit the maximum limit of tokens.
+        2. `map_reduce` summarizes each chunk on it's own in a "map" step, combines the summary, and summarizes the combined summary into a final summary in "reduce" step. If the combined summary is too large, it would raise error.
+
+        '''
+    )
+
+    st.markdown(style_figure_text('Figure Ref: <a href="https://python.langchain.com/docs/use_cases/summarization">LangChain Summarization Stuff & Map Reduce</a>')
+                , unsafe_allow_html=True)
+    st.image('data/architecture/summarization_lang_stuff_mapreduce.png')
+    
+    st.markdown('3. `refine` summarizes the first chunk, and then summarizes the second chunk with the first summary. The same process repeats until all chunks are summarized.')
+    st.markdown(style_figure_text('Figure Ref: <a href="https://python.langchain.com/docs/modules/chains/document/refine">LangChain Refine Chain</a>')
+                , unsafe_allow_html=True)
+    st.image('data/architecture/summarization_lang_stuff_refine.png')
+
+def main():
+    with demo:
+        load_demo()
+    
+    with arch:
+        load_arch()
+
 @st.cache_resource
 def configure_logging():
     print("init logger")
@@ -166,6 +202,22 @@ def configure_logging():
     return logger
 
 if __name__ == "__main__":
+    st.title("Summarize Product Reviews")
+    #modelId = 'amazon.titan-tg1-xlarge'
+    #modelId = 'anthropic.claude-v1'
+    modelId = 'anthropic.claude-instant-v1'
+    data = load_data()
+
+    # Get unique product names
+    unique_products = data['name'].unique()
+
+    keywords = [f'Model Id: {modelId}','Amazon Bedrock API', 'Langchain']
+    formatted_labels = [keyword_label(keyword) for keyword in keywords]
+    st.write(' '.join(formatted_labels), unsafe_allow_html=True)
+    apply_studio_style()
+
+    demo, arch,  = st.tabs(["Demo", "Architecture"])
+
     if "logger" not in st.session_state:
         st.session_state.logger = configure_logging()
     
