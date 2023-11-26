@@ -76,20 +76,6 @@ def style_figure_text(text):
     return f'<div style="font-style:italic; font-size: 0.875em; text-align:center">{text}</div>'
 
 def load_demo():
-    # Add a description for this specific use case
-    st.markdown(
-        '''
-        #### Use Case: 
-        ###### Efficiently tackle the challenges of handling extensive product reviews with advanced summarization technique. 
-        You can access the dataset used for this demo on Kaggle using the following link:
-        [Indian Products on Amazon](https://www.kaggle.com/datasets/nehaprabhavalkar/indian-products-on-amazon?resource=download)
-
-        1. **Product**: Select a product to summarize reviews for.
-        2. **Summarize Reviews**: Get Summary of reviews for the product. It will both summarize long product reviews, tell the sentiment & extract important keywords.
-
-        This architecture effective in summarizing diverse types of content, including call transcripts, meeting notes, books, articles, blog posts, and other relevant textual content. Whether you're dealing with customer feedback, evaluating product sentiment, or conducting in-depth analysis, our summarization technique can enhance your insights and decision-making processes.
-        '''
-    )
     # Dropdown to select a product
     selected_product = st.selectbox("Select Product for summarizing reviews:", [None] + list(unique_products), index=0)
 
@@ -215,6 +201,21 @@ if __name__ == "__main__":
     formatted_labels = [keyword_label(keyword) for keyword in keywords]
     st.write(' '.join(formatted_labels), unsafe_allow_html=True)
     apply_studio_style()
+
+    # Add a description for this specific use case
+    st.markdown(
+        '''
+        #### Use Case: 
+        ###### Efficiently tackle the challenges of handling extensive product reviews with advanced summarization technique. 
+        You can access the dataset used for this demo on Kaggle using the following link:
+        [Indian Products on Amazon](https://www.kaggle.com/datasets/nehaprabhavalkar/indian-products-on-amazon?resource=download)
+
+        1. **Product**: Select a product to summarize reviews for.
+        2. **Summarize Reviews**: Get Summary of reviews for the product. It will both summarize long product reviews, tell the sentiment & extract important keywords.
+
+        This architecture effective in summarizing diverse types of content, including call transcripts, meeting notes, books, articles, blog posts, and other relevant textual content. Whether you're dealing with customer feedback, evaluating product sentiment, or conducting in-depth analysis, our summarization technique can enhance your insights and decision-making processes.
+        '''
+    )
 
     demo, arch,  = st.tabs(["Demo", "Architecture"])
 
