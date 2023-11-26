@@ -1,0 +1,15 @@
+streamlit
+langchain
+matplotlib
+pandas
+transformers
+faiss-cpu
+python-dotenv
+sagemaker
+opensearch-py
+stability-sdk[sagemaker] @ git+https://github.com/Stability-AI/stability-sdk.git@sagemaker
+protobuf==3.20
+awscli>=1.29.57
+boto3>=1.28.57
+botocore>=1.31.57
+anthropic
