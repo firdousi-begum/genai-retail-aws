@@ -181,7 +181,7 @@ class BedrockAssistant():
             outputText = response_body['completions'][0]['data']['text']
         elif modelId == "meta.llama2-13b-chat-v1":
             config.update(
-                {"prompt": {prompt}}
+                {"prompt": prompt}
             )
             body = json.dumps(
               config
@@ -210,12 +210,6 @@ class BedrockAssistant():
             modelId = self.modelId
 
         self.logger.info('In Bedrock GetText-T')
-
-        # boto3_bedrock = self.get_bedrock_client(
-        # aws_access_key_id= os.environ['AWS_ACCESS_KEY_ID_T'],
-        # aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY_T'],
-        # region='us-east-1',
-        # )
 
         accept = 'application/json'
         contentType = 'application/json'

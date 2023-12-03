@@ -44,50 +44,49 @@ def generate_description(product_name, product_features, persona = None):
     return description
 
 def load_demo():
-    usecase, output = st.columns([1,1])
     
-    with usecase:
-        st.markdown(" #### Generate Description")
-        # Create input elements
-        product_name = st.text_input("Enter the name of the Product:", value="Sunglasses")
-        example_features = "- Polarized lenses for enhanced clarity\n- Stylish and lightweight design\n- UV protection for eye safety\n- Adjustable nose pads for a comfortable fit\n- Comes with a protective case and cleaning cloth"
-        product_features = st.text_area("Describe the features of the product:", value=example_features,  height=150)
+   
+    st.markdown(" #### Generate Description")
+    # Create input elements
+    product_name = st.text_input("Enter the name of the Product:", value="Sunglasses")
+    example_features = "- Polarized lenses for enhanced clarity\n- Stylish and lightweight design\n- UV protection for eye safety\n- Adjustable nose pads for a comfortable fit\n- Comes with a protective case and cleaning cloth"
+    product_features = st.text_area("Describe the features of the product:", value=example_features,  height=150)
 
-        # Show persona dropdown and "Personalize Description" button
-        personas = {
-            "None": "",
-            "Adventure Enthusiast": "Active, outdoor lover, seeks thrill",
-            "Tech-Savvy": "Tech-savvy, early adopter, gadget lover",
-            "Fashionista": "Fashion-forward, trendsetter, stylish",
-            "Health-Conscious": "Health-conscious, wellness advocate",
-            "Traveler": "Traveler, wanderlust, culture seeker"
-        }
-        result_label = 'Generated Description'
-        selected_persona = st.selectbox("Select Persona for personalization:", list(personas.keys()), index=0)  # "None" selected by default
-        persona_characteristics = ''
-        if selected_persona != "None":
-            st.session_state.generated_description=''
-            persona_characteristics = personas[selected_persona]
-            characteristics_html = f'<span style="color: #00FFFF;">{persona_characteristics}</span>'
-            st.write(f"**Characteristics of {selected_persona}:**")
-            st.markdown(characteristics_html, unsafe_allow_html=True)
+    # Show persona dropdown and "Personalize Description" button
+    personas = {
+        "None": "",
+        "Adventure Enthusiast": "Active, outdoor lover, seeks thrill",
+        "Tech-Savvy": "Tech-savvy, early adopter, gadget lover",
+        "Fashionista": "Fashion-forward, trendsetter, stylish",
+        "Health-Conscious": "Health-conscious, wellness advocate",
+        "Traveler": "Traveler, wanderlust, culture seeker"
+    }
+    result_label = 'Generated Description'
+    selected_persona = st.selectbox("Select Persona for personalization:", list(personas.keys()), index=0)  # "None" selected by default
+    persona_characteristics = ''
+    if selected_persona != "None":
+        st.session_state.generated_description=''
+        persona_characteristics = personas[selected_persona]
+        characteristics_html = f'<span style="color: #00FFFF;">{persona_characteristics}</span>'
+        st.write(f"**Characteristics of {selected_persona}:**")
+        st.markdown(characteristics_html, unsafe_allow_html=True)
         
-        # Generate Description button
-        if st.button("Generate Description"):
-            with output:
-                with st.spinner("Generating description..."):
-                    # Process the input and generate description
-                    result = generate_description(product_name, product_features, persona_characteristics)
+    # Generate Description button
+    if st.button("Generate Description"):
+           
+        with st.spinner("Generating description..."):
+            # Process the input and generate description
+            result = generate_description(product_name, product_features, persona_characteristics)
                     
-                    # Store the result in session_state
-                    st.session_state.generated_description = result
-                    if selected_persona != "None":
-                        result_label = f'Personalized Description for {selected_persona}'
+            # Store the result in session_state
+            st.session_state.generated_description = result
+            if selected_persona != "None":
+                result_label = f'Personalized Description for {selected_persona}'
                     
-                    st.markdown(f" #### {result_label}")
-                    #styled_description = f'<div style="color: #62A871;">{st.session_state.generated_description}</div>'
-                    styled_description = f'<div class="output-text">{st.session_state.generated_description}</div>'
-                    st.markdown(styled_description, unsafe_allow_html=True)
+            st.markdown(f" #### {result_label}")
+            #styled_description = f'<div style="color: #62A871;">{st.session_state.generated_description}</div>'
+            styled_description = f'<div class="output-text">{st.session_state.generated_description}</div>'
+            st.markdown(styled_description, unsafe_allow_html=True)
      
 
     # Display the generated description if available
