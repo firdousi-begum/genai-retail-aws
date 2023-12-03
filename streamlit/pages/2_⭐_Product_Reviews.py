@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Summarize Product Reviews",
     page_icon="🛒",
 )
-st.cache_data.clear()
+
 config.get_background()
 
 # Read the CSV file
@@ -24,7 +24,26 @@ def load_data():
     return data
     
 def display_product_review_summary(review):
-    json_data = json.loads(review)
+    
+    with st.expander("See output"):
+        st.write(review)
+    
+    # Claude v2.1 always returns text with json
+    try:
+        # Find the index of the first '{' and the last '}'
+        start_idx = review.index('{')
+        end_idx = review.rindex('}') + 1
+
+        # Extract the JSON string
+        json_string = review[start_idx:end_idx]
+        
+        # Load JSON data
+        json_data = json.loads(json_string)
+    except json.JSONDecodeError:
+        print("Error decoding JSON.")
+        return 'Cannot summarize review'
+
+    #json_data = json.loads(review)
 
     # Display the summary
     st.subheader("Product Reviews Summary")
@@ -44,8 +63,6 @@ def display_product_review_summary(review):
     styled_summary = f'<div class="output-text">{summary}</div>'
     st.markdown(styled_summary, unsafe_allow_html=True)
 
-    # with st.expander("See output"):
-    #     st.write(review)
 
 # Your content and interactive elements for the Summarize Product Reviews page
 def generate_review_summary (product_reviews, product_name):
@@ -64,16 +81,16 @@ def generate_review_summary (product_reviews, product_name):
     map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
 
     combine_prompt = """
-    Generate maximum 200 words summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
+    Generate summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
     ```{text}```
 
-    Also return overall sentiment value as 'POSITIVE' 'NEGATIVE' or 'MIXED' based on reveiw summary, 
+    Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the review summary, 
     and generate maximum 5 most important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
-    The output should ALWAYS be valid JSON document only in the outputFormat below, do NOT add any text in the output before JSON . 
+    The output should ALWAYS be valid JSON document with text inside the 'outputFormat' below, do NOT add any text in the output before JSON . 
     <outputFormat>
         {{
-            "product_reviews_summary": "The product received generally positive reviews. Customers praised its quality and affordability.",
-            "overall_sentiment": "overall sentiment value",
+            "product_reviews_summary": "Maximum 200 words summary.",
+            "overall_sentiment": "POSITIVE or NEGATIVE or MIXED",
             "keywords_highlight": [
                 {{"keyword": "Quality", "sentiment": "POSITIVE"}},
                 {{"keyword": "Affordability", "sentiment": "NEGATIVE"}},
@@ -81,6 +98,7 @@ def generate_review_summary (product_reviews, product_name):
             ]
         }}
     </outputFormat>
+
 
     """
     combine_prompt_template = PromptTemplate(template=combine_prompt, input_variables=["text"])
@@ -94,7 +112,7 @@ def generate_review_summary (product_reviews, product_name):
     #modelId = 'anthropic.claude-v1'
     inference_config = {
                                 "max_tokens_to_sample":4096,
-                                "temperature":0.5,
+                                "temperature":1,
                                 "top_k":250,
                                 "top_p":0.5,
                                 "stop_sequences":[]
@@ -218,7 +236,7 @@ def configure_logging():
 if __name__ == "__main__":
     st.title("Summarize Product Reviews")
     #modelId = 'amazon.titan-tg1-xlarge'
-    modelId = 'anthropic.claude-v1'
+    modelId = 'anthropic.claude-v2:1'
     #modelId = 'anthropic.claude-instant-v1'
     data = load_data()
 

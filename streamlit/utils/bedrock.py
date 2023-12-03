@@ -156,7 +156,7 @@ class BedrockAssistant():
 
         #print(f'Claude response: {response_body}')
         config = generationConfig.copy()
-        if modelId == "anthropic.claude-v2" or modelId == "anthropic.claude-v1" or modelId== "anthropic.claude-instant-v1":
+        if "claude" in modelId:
             print('hello')
             config.update(
                     {"prompt": f"Human: {prompt}\n\nAssistant:"}

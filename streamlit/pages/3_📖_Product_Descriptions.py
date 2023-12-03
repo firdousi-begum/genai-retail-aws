@@ -131,7 +131,7 @@ def configure_logging():
 if __name__ == "__main__":
     st.title("Generate Product Descriptions")
     # modelId = 'amazon.titan-tg1-xlarge'
-    modelId = 'anthropic.claude-instant-v1'
+    modelId = 'anthropic.claude-v2:1'
 
     keywords = [f'Model Id: {modelId}','Amazon Bedrock API']
     formatted_labels = [keyword_label(keyword) for keyword in keywords]

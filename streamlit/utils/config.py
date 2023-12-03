@@ -114,7 +114,7 @@ def get_background():
 
     }}
 
-    [data-testid="baseButton-secondary"]:hover {{
+    [data-testid="baseButton-secondary"]:active {{
     transform: translateY(1px);
     #background-color: #230930;
     box-shadow: inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
