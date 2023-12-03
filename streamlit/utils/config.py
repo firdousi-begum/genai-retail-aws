@@ -67,7 +67,7 @@ def get_img_as_base64(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-@st.cache_data
+#@st.cache_data
 def get_background():
     bg_img = get_img_as_base64("images/bg.png")
     logo = get_img_as_base64("images/logo.png")
@@ -88,7 +88,6 @@ def get_background():
     background-color: rgba(0, 0, 0, 0);
     }}
 
-
    [data-testid="stHeader"]{{
     # background-image: url("data:image/png;base64,{logo}");
     # background-repeat: no-repeat;
@@ -100,14 +99,21 @@ def get_background():
     justify-content: center;
     }}
 
-    [data-testid="block-container"] {{
-    z-index: 0;
-    position: relative;
-    }}
-
     [data-testid="stSidebar"] {{
     background-color: rgba(0, 0, 0, 0);
     }}
+
+    [data-testid="baseButton-secondary"] {{
+    box-shadow: 0px -5px 10px 0px rgba(0, 0, 0, 0.5);
+
+    }}
+
+    [data-testid="baseButton-secondary"]:hover {{
+    transform: translateY(-1px);
+    background-color: #230930;
+    box-shadow: inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
+    }}
+
     </style>
     """
 

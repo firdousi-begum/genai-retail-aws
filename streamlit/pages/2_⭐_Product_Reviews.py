@@ -13,7 +13,7 @@ st.set_page_config(
     page_title="Summarize Product Reviews",
     page_icon="🛒",
 )
-
+st.cache_data.clear()
 config.get_background()
 
 # Read the CSV file
