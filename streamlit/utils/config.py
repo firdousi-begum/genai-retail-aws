@@ -69,8 +69,8 @@ def get_img_as_base64(bin_file):
 
 @st.cache_data
 def get_background():
-    bg_img = get_img_as_base64("images/bgg.png")
-    logo = get_img_as_base64("images/banner_logo.png")
+    bg_img = get_img_as_base64("images/bg.png")
+    logo = get_img_as_base64("images/logo.png")
 
     page_bg_img = f"""
     <style>
@@ -88,11 +88,21 @@ def get_background():
     background-color: rgba(0, 0, 0, 0);
     }}
 
+
+   [data-testid="stHeader"]{{
+    # background-image: url("data:image/png;base64,{logo}");
+    # background-repeat: no-repeat;
+    # background-size: 100% 100%;  
+    # background-position: 50% 0%;
+    background: url("data:image/png;base64,{logo}") 8% center/138px no-repeat, linear-gradient(to right, rgb(36,34,67) 40%,rgb(76,19,138) 70%, rgb(205,54,117));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }}
+
     [data-testid="block-container"] {{
-    background-image: url("data:image/png;base64,{logo}");
-    background-repeat: no-repeat;
-    background-size: contain;  
-    background-position: 50% 5%;
+    z-index: 0;
+    position: relative;
     }}
 
     [data-testid="stSidebar"] {{

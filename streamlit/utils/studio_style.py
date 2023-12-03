@@ -25,8 +25,9 @@ def apply_studio_style():
             }
 
             .keyword-label {
-                background-color: RGB(67, 4, 77); /* Blue background color */
+                background-color: RGB(102, 0, 51); /* Blue background color */
                 color: #fff; /* White text color */
+                box-shadow: -5px -5px 10px rgba(0, 0, 0,0.5);
                 border-radius: 5px;
                 padding: 5px 10px;
                 display: inline-block;
@@ -38,6 +39,7 @@ def apply_studio_style():
             .keyword-label-model {
                 background-color: RGB(135, 53, 5); /* Blue background color */
                 color: #fff; /* White text color */
+                box-shadow: -5px -5px 10px rgba(0, 0, 0,0.5);
                 border-radius: 5px;
                 padding: 5px 10px;
                 display: inline-block;
@@ -50,8 +52,8 @@ def apply_studio_style():
                 background-color: rgb(47,63,47); 
                 color: #ffff; /* White text color */
                 border-radius: 5px;
-                box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
-                box-shadow: inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
+                # box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
+                # box-shadow: inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
                 box-shadow: -5px -5px 15px rgba(0, 0, 0,0.5),
                 inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
                 padding: 5px 10px;
