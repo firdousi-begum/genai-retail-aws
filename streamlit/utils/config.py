@@ -93,7 +93,7 @@ def get_background():
     # background-repeat: no-repeat;
     # background-size: 100% 100%;  
     # background-position: 50% 0%;
-    background: url("data:image/png;base64,{logo}") 8% center/138px no-repeat, linear-gradient(to right, rgb(36,34,67) 40%,rgb(76,19,138) 70%, rgb(205,54,117));
+    background: url("data:image/png;base64,{logo}") 3% center/138px no-repeat, linear-gradient(to right, rgb(36,34,67) 40%,rgb(76,19,138) 70%, rgb(205,54,117));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -102,7 +102,7 @@ def get_background():
     [data-testid="stSidebar"] {{
     #background-color: rgba(0, 0, 0, 0);
     background-image: url("data:image/png;base64,{logo}"), url("data:image/png;base64,{bg_img}");
-    background-position: center 8%, center center;
+    background-position: center 30px, center center;
     background-repeat: no-repeat, no-repeat;
     background-size: 138px, auto;
       
