@@ -10,6 +10,17 @@ def keyword_label(text):
 def keyword_label_model(text):
     return f'<div class="keyword-label-model">{text}</div>'
 
+def sentiment_label(sentiment, text):
+    sentiment_lower = sentiment.lower()  # Convert to lowercase for case-insensitive matching
+    if sentiment_lower == "positive":
+        return f'<div class="sentiment-label-positive">{text}</div>'
+    elif sentiment_lower == "negative":
+        return f'<div class="sentiment-label-negative">{text}</div>'
+    elif sentiment_lower == "mixed" or sentiment_lower == "neutral":
+        return f'<div class="sentiment-label-mixed">{text}</div>'
+    else:
+        return f'<div class="sentiment-label-positive">{text}</div>'  # Default color if sentiment is not recognized
+
 def apply_studio_style():
     st.markdown(
         """
@@ -48,8 +59,55 @@ def apply_studio_style():
                 font-size: 15px;
             }
 
+            .sentiment-label-positive  {
+                background-color: RGB(0, 128, 0); /* Blue background color */
+                color: #fff; /* White text color */
+                #box-shadow: -2px -2px 3px rgba(0, 0, 0,0.5);
+                border-radius: 10px;
+                min-width: 100px;
+                padding: 2px 5px;
+                display: inline-block;
+                margin-right: 5px;
+                margin-top: 2px;
+                margin-bottom: 5px;
+                text-align: center;
+                font-size: 90%;
+            }
+
+            .sentiment-label-negative  {
+                background-color: RGB(200, 0, 67); /* Blue background color */
+                color: #fff; /* White text color */
+                #box-shadow: -2px -2px 3px rgba(0, 0, 0,0.5);
+                border-radius: 10px;
+                min-width: 100px;
+                padding: 2px 5px;
+                display: inline-block;
+                margin-right: 5px;
+                margin-top: 2px;
+                margin-bottom: 5px;
+                text-align: center;
+                font-size: 90%;
+            }
+
+            .sentiment-label-mixed  {
+                background-color: RGB(184, 136, 0); /* Blue background color */
+                color: #fff; /* White text color */
+                #box-shadow: -2px -2px 3px rgba(0, 0, 0,0.5);
+                border-radius: 10px;
+                min-width: 100px;
+                padding: 2px 5px;
+                display: inline-block;
+                margin-right: 5px;
+                margin-top: 2px;
+                margin-bottom: 5px;
+                text-align: center;
+                font-size: 90%;
+            }
+
+
             .output-text {
-                background-color: rgb(47,63,47); 
+                #background-color: rgb(47,63,47); 
+                background-color: rgb(42,20,64); 
                 color: #ffff; /* White text color */
                 border-radius: 5px;
                 # box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);

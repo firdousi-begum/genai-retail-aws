@@ -1,12 +1,13 @@
 import streamlit as st
 from langchain import PromptTemplate
 from utils.studio_style import apply_studio_style
-from utils.studio_style import keyword_label
+from utils.studio_style import keyword_label, sentiment_label
 from utils import langchain
 from utils import bedrock
 from utils import config
 from datetime import datetime
 import pandas as pd
+import json
 import logging
 
 st.set_page_config(
@@ -21,9 +22,32 @@ config.get_background()
 def load_data():
     data = pd.read_csv("./data/amazon_vfl_reviews.csv")
     return data
+    
+def display_product_review_summary(review):
+    json_data = json.loads(review)
+
+    # Display the summary
+    st.subheader("Product Reviews Summary")
+
+     # Display the overall sentiment
+    formatted_sentiment = sentiment_label(json_data["overall_sentiment"], json_data["overall_sentiment"])
+    overall_sentiment =f'<div style="display: inline-block; margin:5px;"><b>Overall Sentiment</b> : {formatted_sentiment}  </div>'
+
+    formatted_labels = [
+        sentiment_label(keyword_info["sentiment"],keyword_info["keyword"] ) 
+        for keyword_info in json_data["keywords_highlight"]
+        ]
+    
+    #st.write(' '.join(formatted_labels), unsafe_allow_html=True)
+    summary = f'{overall_sentiment}</br>{json_data["product_reviews_summary"]}</br></br>{"".join(formatted_labels)}'
+
+    styled_summary = f'<div class="output-text">{summary}</div>'
+    st.markdown(styled_summary, unsafe_allow_html=True)
+
+    # with st.expander("See output"):
+    #     st.write(review)
 
 # Your content and interactive elements for the Summarize Product Reviews page
-
 def generate_review_summary (product_reviews, product_name):
     
     if product_reviews is None:
@@ -40,15 +64,16 @@ def generate_review_summary (product_reviews, product_name):
     map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
 
     combine_prompt = """
-    Generate maximum 200 words summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes,
-    overall sentiment, generate maximum 5 important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
+    Generate maximum 200 words summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
     ```{text}```
 
-    The output should be valid JSON document only in the outputFormat below, do NOT add any text in the output before JSON . 
+    Also return overall sentiment value as 'POSITIVE' 'NEGATIVE' or 'MIXED' based on reveiw summary, 
+    and generate maximum 5 most important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
+    The output should ALWAYS be valid JSON document only in the outputFormat below, do NOT add any text in the output before JSON . 
     <outputFormat>
         {{
             "product_reviews_summary": "The product received generally positive reviews. Customers praised its quality and affordability.",
-            "overall_sentiment": "POSITIVE",
+            "overall_sentiment": "overall sentiment value",
             "keywords_highlight": [
                 {{"keyword": "Quality", "sentiment": "POSITIVE"}},
                 {{"keyword": "Affordability", "sentiment": "NEGATIVE"}},
@@ -66,7 +91,7 @@ def generate_review_summary (product_reviews, product_name):
     #                         "temperature":0,
     #                         "topP":0.9
     #                         }
-    modelId = 'anthropic.claude-instant-v1'
+    #modelId = 'anthropic.claude-v1'
     inference_config = {
                                 "max_tokens_to_sample":4096,
                                 "temperature":0.5,
@@ -76,6 +101,7 @@ def generate_review_summary (product_reviews, product_name):
                         }
     #print(f'Reviews:{product_reviews}')
     summary = langchain.summarize_long_text(product_reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, map_prompt, combine_prompt)
+    display_product_review_summary(summary)
     return summary
 
 def style_figure_text(text):
@@ -117,10 +143,6 @@ def load_demo():
                     product_reviews = "\n".join(reviews_df['review'])
                     product_reviews = combine_prompt + product_reviews
                     summary = generate_review_summary(product_reviews, selected_product)
-                    st.subheader(f"Summarized Review")
-                    #styled_summary = f'<div style="color: #c3ed9d;">{summary}</div>'
-                    styled_summary = f'<div class="output-text">{summary}</div>'
-                    st.markdown(styled_summary, unsafe_allow_html=True)
 
             st.markdown("#### Product Reviews")
             for _, row in reviews_df.iterrows():
@@ -196,8 +218,8 @@ def configure_logging():
 if __name__ == "__main__":
     st.title("Summarize Product Reviews")
     #modelId = 'amazon.titan-tg1-xlarge'
-    #modelId = 'anthropic.claude-v1'
-    modelId = 'anthropic.claude-instant-v1'
+    modelId = 'anthropic.claude-v1'
+    #modelId = 'anthropic.claude-instant-v1'
     data = load_data()
 
     # Get unique product names
