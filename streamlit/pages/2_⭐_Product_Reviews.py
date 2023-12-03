@@ -4,6 +4,7 @@ from utils.studio_style import apply_studio_style
 from utils.studio_style import keyword_label
 from utils import langchain
 from utils import bedrock
+from utils import config
 from datetime import datetime
 import pandas as pd
 import logging
@@ -12,6 +13,8 @@ st.set_page_config(
     page_title="Summarize Product Reviews",
     page_icon="🛒",
 )
+
+config.get_background()
 
 # Read the CSV file
 @st.cache_data

@@ -6,4 +6,5 @@ st.set_page_config(
     page_icon="🛒",
 )
 
+config.get_background()
 config.getEnvCredentials()

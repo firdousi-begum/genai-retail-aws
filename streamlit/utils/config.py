@@ -1,4 +1,4 @@
-import os, requests
+import os, requests, base64
 from dotenv import load_dotenv
 import streamlit as st
 
@@ -61,4 +61,45 @@ def getBedrockConfig():
     #print(f'Bedrock: {br_endpoint}, {br_region}')
 
     return br_endpoint, br_region
+
+def get_img_as_base64(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+@st.cache_data
+def get_background():
+    bg_img = get_img_as_base64("images/bgg.png")
+    logo = get_img_as_base64("images/banner_logo.png")
+
+    page_bg_img = f"""
+    <style>
+    .imglogo {{
+    width: 100%;
+    height: auto; 
+    content:
+    }}
+    .stApp {{
+    background-image: url("data:image/png;base64,{bg_img}");
+    background-size: cover;
+    }}
+
+    [data-testid="stHeader"] {{
+    background-color: rgba(0, 0, 0, 0);
+    }}
+
+    [data-testid="block-container"] {{
+    background-image: url("data:image/png;base64,{logo}");
+    background-repeat: no-repeat;
+    background-size: contain;  
+    background-position: 50% 5%;
+    }}
+
+    [data-testid="stSidebar"] {{
+    background-color: rgba(0, 0, 0, 0);
+    }}
+    </style>
+    """
+
+    st.markdown(page_bg_img, unsafe_allow_html=True)
 

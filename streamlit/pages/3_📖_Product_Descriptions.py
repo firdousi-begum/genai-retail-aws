@@ -1,13 +1,15 @@
 import streamlit as st
 from utils.studio_style import apply_studio_style
 from utils.studio_style import keyword_label
-from utils import bedrock
+from utils import bedrock, config
 import logging
 
 st.set_page_config(
     page_title="Generate Product Descriptions",
     page_icon="🛒",
 )
+
+config.get_background()
 
 def generate_description(product_name, product_features, persona = None):
     
