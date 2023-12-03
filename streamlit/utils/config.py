@@ -100,19 +100,25 @@ def get_background():
     }}
 
     [data-testid="stSidebar"] {{
-    background-color: rgba(0, 0, 0, 0);
+    #background-color: rgba(0, 0, 0, 0);
+    #background-image: url("data:image/png;base64,{bg_img}");
     }}
 
     [data-testid="baseButton-secondary"] {{
-    box-shadow: 0px -5px 10px 0px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0px -5px 5px 0px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(to top, rgb(36,34,67),rgb(76,19,138), rgb(36,34,67));
 
     }}
 
     [data-testid="baseButton-secondary"]:hover {{
-    transform: translateY(-1px);
-    background-color: #230930;
+    transform: translateY(1px);
+    #background-color: #230930;
     box-shadow: inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
     }}
+
+    # [data-testid="stSidebarNav"] li {{
+    # background: linear-gradient(to right, rgb(28,11,29),rgb(76,19,138), rgb(36,34,67));
+    # }}
 
     </style>
     """
