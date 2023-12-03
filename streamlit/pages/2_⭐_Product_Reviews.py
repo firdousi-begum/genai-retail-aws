@@ -40,19 +40,22 @@ def generate_review_summary (product_reviews, product_name):
     map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
 
     combine_prompt = """
-    Write a concise summary of the following product reviews for the product delimited by triple backquotes. 
+    Generate maximum 200 words summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes,
+    overall sentiment, generate maximum 5 important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
     ```{text}```
 
-    Return overall sentiment of the product reviews in separate section 'SENTIMENT' after thie concise summary.
-    Return important keywords from the product reviews in separate section 'KEYWORDS' after the 'SENTIMENT'.
-    
+    The output should be valid JSON document only in the outputFormat below, do NOT add any text in the output before JSON . 
     <outputFormat>
-    **SUMMARY:** Concise summary of the product reviews \n\n
-
-    **SENTIMENT:** overall sentiment for the summary: POSITIVE, NEGATIVE or MIXED \n\n\n\n
-    **KEYWORDS:** extract important keywords from the summary
+        {{
+            "product_reviews_summary": "The product received generally positive reviews. Customers praised its quality and affordability.",
+            "overall_sentiment": "POSITIVE",
+            "keywords_highlight": [
+                {{"keyword": "Quality", "sentiment": "POSITIVE"}},
+                {{"keyword": "Affordability", "sentiment": "NEGATIVE"}},
+                {{"keyword": "Customer Service", "sentiment": "MIXED"}}
+            ]
+        }}
     </outputFormat>
-   
 
     """
     combine_prompt_template = PromptTemplate(template=combine_prompt, input_variables=["text"])

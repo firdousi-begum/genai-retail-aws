@@ -101,7 +101,11 @@ def get_background():
 
     [data-testid="stSidebar"] {{
     #background-color: rgba(0, 0, 0, 0);
-    #background-image: url("data:image/png;base64,{bg_img}");
+    background-image: url("data:image/png;base64,{logo}"), url("data:image/png;base64,{bg_img}");
+    background-position: center 8%, center center;
+    background-repeat: no-repeat, no-repeat;
+    background-size: 138px, auto;
+      
     }}
 
     [data-testid="baseButton-secondary"] {{
