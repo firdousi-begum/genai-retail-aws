@@ -107,7 +107,8 @@ def apply_studio_style():
 
             .output-text {
                 #background-color: rgb(47,63,47); 
-                background-color: rgb(73,23,81); 
+                #background-color: rgb(73,23,81); 
+                background-color: rgb(36,34,67);
                 color: #ffff; /* White text color */
                 border-radius: 5px;
                 # box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);

@@ -87,6 +87,7 @@ def generate_review_summary (product_reviews, product_name):
     Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the review summary, 
     and generate maximum 5 most important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
     The output should ALWAYS be valid JSON document with text inside the 'outputFormat' below, do NOT add any text in the output before JSON . 
+    Don't include any preamble.
     <outputFormat>
         {{
             "product_reviews_summary": "Maximum 200 words summary.",

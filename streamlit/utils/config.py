@@ -34,7 +34,7 @@ def getEnvCredentials():
         # logger.info(f'new key: {key}')
         # logger.info(f'new secret: {secret}')
 
-    #print(f'ENCV: {key}, {secret}, {region}')
+    print(f'ENCV: {key}, {secret}, {region}')
     
     #print(f'ENCV: {os.environ["AWS_ACCESS_KEY_ID"]}, { os.environ["AWS_SECRET_ACCESS_KEY"]}, {region}')
 
@@ -104,11 +104,20 @@ def get_background():
     # background-image: url("data:image/png;base64,{logo}"), url("data:image/png;base64,{bg_img}");
     # background-position: center 30px, center center;
     # background-repeat: no-repeat, no-repeat;
+    # background-image: url("data:image/png;base64,{logo}");
+    # background-position: center 30px;
+    # background-repeat: no-repeat;
+    # background-size: 138px;
+    # position:relative;
+      
+    }}
+
+    [data-testid="stSidebarNav"] {{
     background-image: url("data:image/png;base64,{logo}");
     background-position: center 30px;
     background-repeat: no-repeat;
     background-size: 138px;
-    position:relative;
+    # position:relative;
       
     }}
 

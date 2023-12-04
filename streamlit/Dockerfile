@@ -1,15 +1,11 @@
-# streamlit/Dockerfile
-
 FROM python:3.9-slim
 
 WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get upgrade -y \
-    build-essential \
-    curl \
-    git \
-    software-properties-common \
-    && rm -rf /var/lib/apt/lists/*
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install graphviz git dos2unix unzip curl -y
 
 COPY . .
 
