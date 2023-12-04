@@ -123,7 +123,7 @@ def get_background():
 
     [data-testid="baseButton-secondary"] {{
     box-shadow: inset 0px -5px 5px 0px rgba(0, 0, 0, 0.5);
-    background: linear-gradient(to top, rgb(36,34,67),rgb(76,19,138), rgb(36,34,67));
+    background: linear-gradient(to top, rgb(36,34,67),rgb(78, 74, 140), rgb(36,34,67));
 
     }}
 
