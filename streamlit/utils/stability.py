@@ -145,8 +145,15 @@ class StabilityAssistant():
 
         # Display generated images
         #print(f'Response: {response}')
+       
         if response.artifacts:
-            return response.artifacts
+            return [
+                Image.open(
+                    BytesIO(
+                        base64.b64decode(base64_image.base64.encode()))
+                    ) for base64_image in response.artifacts
+                ]
+            # return response.artifacts
         else:
             return response.result
     

@@ -11,6 +11,9 @@ from utils import config
 from langchain.llms.bedrock import Bedrock
 from typing import Optional, List, Any
 from langchain.callbacks.manager import CallbackManagerForLLMRun
+import base64
+from PIL import Image
+from io import BytesIO
 
 # logger = logging.getLogger('retail_genai')
 # logger.setLevel(logging.DEBUG)
@@ -131,6 +134,98 @@ class BedrockAssistant():
         #print(bedrock_client.list_foundation_models())
         return bedrock_client
 
+    def generate_image(self, modelId=None, generationConfig = None, generation_type= None, negative_prompt=''):
+        if generationConfig is None or generationConfig == '':
+            return
+        
+        if modelId is None or modelId == '':
+            modelId = self.modelId
+
+        self.logger.info(f'In Bedrock GetImage with region {self.b_region}')
+        accept = 'application/json'
+        contentType = 'application/json'
+
+        if generationConfig is None:
+            generationConfig = {
+            "numberOfImages": 1,   # Range: 1 to 5 
+            "quality": "premium",  # Options: standard or premium
+            "height": 768,         # Supported height list in the docs 
+            "width": 1280,         # Supported width list in the docs
+            "cfgScale": generationConfig.cfg_scale,       # Range: 1.0 (exclusive) to 10.0
+            "seed": generationConfig.seed             # Range: 0 to 214783647
+        }
+
+        if modelId == "amazon.titan-image-generator-v1":
+            print('text to image titan')
+            text = generationConfig.text_prompts[0].text
+            body = json.dumps( {
+                "taskType": generation_type,
+                "textToImageParams": {
+                    "text": text,
+                    "negativeText": negative_prompt
+                },
+                "imageGenerationConfig": {
+                    "numberOfImages": 1,   # Range: 1 to 5 
+                    "quality": "premium",  # Options: standard or premium
+                    "height": generationConfig.height,         # Supported height list in the docs 
+                    "width": generationConfig.width,         # Supported width list in the docs
+                    "cfgScale": generationConfig.cfg_scale,       # Range: 1.0 (exclusive) to 10.0
+                    "seed": generationConfig.seed             # Range: 0 to 214783647
+                }
+            })
+            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
+            response_body = json.loads(response.get("body").read())
+            outputImages = [Image.open(BytesIO(base64.b64decode(base64_image))) for base64_image in response_body.get("images")]
+            #outputImages = response_body.get("images")
+        else:
+            config = {
+                "text_prompts": (
+                    [{"text": prompt_data.text, "weight": prompt_data.weight} for prompt_data in generationConfig.text_prompts]
+                ),
+                "cfg_scale": generationConfig.cfg_scale,
+                "seed": generationConfig.seed,
+                "steps": generationConfig.steps,
+                "clip_guidance_preset": generationConfig.clip_guidance_preset,
+                "sampler": generationConfig.sampler,
+                "width": generationConfig.width,
+                "height": generationConfig.height
+            }
+
+            #print(generationConfig)
+            if generationConfig.style_preset != 'NONE':
+                config.update({"style_preset": generationConfig.style_preset})
+
+            if generationConfig.mask_source is not None:
+                config.update({
+                    "mask_source": generationConfig.mask_source,
+                    "mask_image" : generationConfig.mask_image,
+                    "init_image": generationConfig.init_image,
+                    })
+            
+            if generationConfig.init_image_mode is not None:
+                config.update({
+                    "init_image_mode": generationConfig.init_image_mode,
+                    "init_image": generationConfig.init_image,
+                    })
+                
+                if generationConfig.init_image_mode == "STEP_SCHEDULE":
+                    config.update({
+                        "step_schedule_start": generationConfig.step_schedule_start,
+                        "step_schedule_end": generationConfig.step_schedule_end,
+                        })
+                else:
+                    config.update({
+                         "image_strength": generationConfig.image_strength,
+                        })
+            
+            #print(config)
+
+            body = json.dumps(config) 
+            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId)
+            response_body = json.loads(response.get("body").read())
+            outputImages = [Image.open(BytesIO(base64.b64decode(base64_image.get("base64")))) for base64_image in response_body.get("artifacts")]
+       
+        return outputImages
 
 
     def get_text(self, prompt, modelId=None, generationConfig = None):

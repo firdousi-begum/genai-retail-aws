@@ -120,9 +120,10 @@ def get_background():
     box-shadow: inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
     }}
 
-    # [data-testid="stSidebarNav"] li {{
-    # background: linear-gradient(to right, rgb(28,11,29),rgb(76,19,138), rgb(36,34,67));
-    # }}
+    [data-testid="stImage"] {{
+    box-shadow: -5px -10px 10px rgba(0, 0, 0,0.5);
+    border-radius: 5px;
+    }}
 
     </style>
     """

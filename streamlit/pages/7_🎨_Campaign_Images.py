@@ -1,13 +1,14 @@
 import streamlit as st
 import base64
 from PIL import Image
-from utils import stability
+from utils import stability, bedrock
 import streamlit as st
 from PIL import Image
 import io
 import logging
 from typing import Union
-from utils import config
+from utils import config, products
+from utils.studio_style import keyword_label,  apply_studio_style
 from stability_sdk.api import GenerationRequest, GenerationResponse, TextPrompt, InitImageMode, GuidancePreset, Sampler, MaskSource
 
 
@@ -15,29 +16,46 @@ from stability_sdk.api import GenerationRequest, GenerationResponse, TextPrompt,
 st.set_page_config(page_title="Generate Images - Stability.AI", page_icon="🎨")
 config.get_background()
 
+endpointName ='sdxl-jumpstart-1-2023-08-30-23-25-11-865'
+
 # Define API base URL
 API_BASE_URL = "https://api.stability.ai"
 
 # Initialize the assistant object using session state
 if "st_assistant" not in st.session_state:
     st.session_state.st_assistant = None
+if "b_assistant" not in st.session_state:
+    st.session_state.b_assistant = None
 if "st_images" not in st.session_state:
     st.session_state.st_images = None
 if "st_request" not in st.session_state:
     st.session_state.st_request = None
 if "selected_prompt" not in st.session_state:
     st.session_state.selected_prompt = None
+# if "modelId" not in st.session_state:
+#     st.session_state.modelId = ''
 
-endpointName ='sdxl-jumpstart-1-2023-08-30-23-25-11-865'
+providers = ['Amazon Bedrock API', 'Amazon SageMaker JumpStart']
+models = {
+    "Amazon Bedrock API": [
+    "stability.stable-diffusion-xl-v1",
+    "amazon.titan-image-generator-v1",
+    
+    ],
+    "Amazon SageMaker JumpStart": [
+        "sdxl-jumpstart-1-2023-08-30-23-25-11-865"
+    ]
+}
+
+negative_prompt = "ugly, tiling, poorly drawn hands, out of frame, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low quality, bad art, beginner, windy, amateur, distorted"
 
 # List of engine types
 engine_types = ["engine1", "engine2", "engine3", "engine4", "engine5", "engine6"]
 
 # List of generation types
-generation_types = ["Text to Image", "Image to Image", "Masking"]
+generation_types = ["TEXT_IMAGE", "Image to Image", "Masking"]
 # Create tabs
 prompts, params = st.sidebar.tabs(["Prompts", "Parameters"])
-
 
 #selected_engine = st.sidebar.selectbox("Select Engine", engine_types)
 selected_engine = "stable-diffusion-xl-1024-v1-0"
@@ -77,382 +95,6 @@ default_params = {
         }
 }
 
-# Campaign and prompt data (same as in the previous response)
-campaigns = ["NONE","Grocery Campaign", "Product Ideation"]
-prompts_data = {
-    "Product Ideation": [
-         {
-            "Prompt Title": "Men's leather jacket in black",
-            "Prompts": [
-                {
-                    "Text Prompt": "Generate a high-resolution image of a classic men's leather jacket in black. It should showcase fine stitching details and a sleek, modern design.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "K_DPM_2",
-                "Samples": 1,
-                "Steps": 50,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            },
-            
-        },
-
-         {
-            "Prompt Title": "Luxurious SUV interior",
-            "Prompts": [
-                {
-                    "Text Prompt": "Create an image of a luxurious SUV interior with premium leather seats, a state-of-the-art infotainment system, and panoramic sunroof.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "K_DPM_2",
-                "Samples": 1,
-                "Steps": 50,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            },
-            
-        },
-
-        
-         {
-            "Prompt Title": "Compact Urban Autonomous Vehicle",
-            "Prompts": [
-                {
-                    "Text Prompt": "Generate a concept image of a compact autonomous vehicle designed for urban commuting, featuring smart sensors and a spacious interior.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Height": 768,
-                "Width": 1344,
-                "Sampler": "K_DPM_2",
-                "Samples": 1,
-                "Steps": 50,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            },
-            
-        },
-
-        
-         {
-            "Prompt Title": "Efficient urban delivery truck",
-            "Prompts": [
-                {
-                    "Text Prompt": "Create an image of an efficient urban delivery truck optimized for city logistics, featuring an ergonomic driver cabin and eco-friendly technology.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "K_DPM_2",
-                "Samples": 1,
-                "Steps": 50,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            },
-            
-        },
-
-
-    ],
-    "Grocery Campaign": [
-        {
-            "Prompt Title": "Promotion of Fresh Berries",
-            "Prompts": [
-                {
-                    "Text Prompt": "A vibrant display of freshly picked Scandinavian berries, including strawberries, blueberries, and raspberries, arranged in a rustic wooden crate.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "K_DPM_2",
-                "Samples": 1,
-                "Steps": 70,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            }
-        },
-        {
-            "Prompt Title": "Scandinavian Seafood Feast",
-            "Prompts": [
-                {
-                    "Text Prompt": "A seafood banquet showcasing Norwegian salmon, Swedish shrimp, and Finnish herring, presented on a seaside picnic table with lemon wedges and fresh dill.",
-                    "Weight": 1.0
-                },
-                {
-                    "Text Prompt": "Oceanfront, al fresco dining, summery, well-lit, delicious, traditional, Scandinavian.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Height": 768,
-                "Width": 1344,
-                "Sampler": "K_DPM_2_ANCESTRAL",
-                "Samples": 1,
-                "Steps": 60,
-                "Cfg Scale": 6,
-                "Clip Guidance Preset": "FAST_GREEN",
-                "Style Preset": "NONE",
-                "Seed": 555
-            }
-        },
-        {
-            "Prompt Title": "Scandinavian BBQ Feast",
-            "Prompts": [
-                {
-                    "Text Prompt": "Scandinavian style grilled meats and fresh vegetables for a sizzling BBQ feast.",
-                    "Weight": 1.0
-                },
-                {
-                    "Text Prompt": "Smoky, savory, grilled, barbecue, al fresco dining.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Height": 768,
-                "Width": 1344,
-                "Sampler": "K_EULER",
-                "Samples": 1,
-                "Steps": 50,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            }
-        },
-        {
-            "Prompt Title": "Icy Cool Scandinavian Treats",
-            "Prompts": [
-                {
-                    "Text Prompt": "A delightful display of Scandinavian ice creams (mjukglas) and frozen treats, perfect for cooling down on a hot summer day.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "K_DPM_2_ANCESTRAL",
-                "Samples": 1,
-                "Steps": 20,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            }
-        },
-        {
-            "Prompt Title": "Nordic Picnic Delights",
-            "Prompts": [
-                {
-                    "Text Prompt": "A picnic scene in a lush Scandinavian forest with a spread of open sandwiches (smørrebrød), creamy cheeses, crisp cucumbers, and local jams.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "K_EULER",
-                "Samples": 1,
-                "Steps": 75,
-                "Cfg Scale": 6,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            }
-        },
-        {
-            "Prompt Title": "Refreshing Berry Smoothies",
-            "Prompts": [
-                {
-                    "Text Prompt": "A tabletop filled with glass jars of refreshing berry smoothies made from Nordic wild berries, garnished with mint leaves and ice cubes.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "K_DPMPP_2M",
-                "Samples": 1,
-                "Steps": 70,
-                "Cfg Scale": 5,
-                "Clip Guidance Preset": "FAST_GREEN",
-                "Style Preset": "NONE",
-                "Seed": 555
-            }
-        },
-        {
-            "Prompt Title": "Savoring Scandinavian Cuisine",
-            "Prompts": [
-                {
-                    "Text Prompt": "A cozy kitchen scene with a chef preparing a traditional Scandinavian dish, surrounded by fresh local ingredients like salmon, potatoes, and dill.",
-                    "Weight": 1.0
-                }
-            ],
-            "Generation Parameters": {
-                "Sampler": "DDPM",
-                "Samples": 1,
-                "Steps": 65,
-                "Cfg Scale": 6,
-                "Clip Guidance Preset": "FAST_BLUE",
-                "Style Preset": "NONE",
-                "Seed": 555
-            }
-        },
-        {
-        "Prompt Title": "Harvest Abundance",
-        "Prompts": [
-            {
-                "Text Prompt": "A bountiful display of autumn's bounty, featuring pumpkins, apples, colorful leaves, and rustic gourds set on a weathered wooden table.",
-                "Weight": 1.0
-            }
-        ],
-        "Generation Parameters": {
-            "Sampler": "K_DPMPP_2M",
-            "Samples": 1,
-            "Steps": 50,
-            "Cfg Scale": 6,
-            "Clip Guidance Preset": "FAST_BLUE",
-            "Seed": 555
-        }
-    },
-    {
-        "Prompt Title": "Scandinavian Fall Feast",
-        "Prompts": [
-            {
-                "Text Prompt": "A sumptuous Scandinavian feast with roasted meats, root vegetables, and traditional fall dishes.",
-                "Weight": 1.0
-            },
-            {
-                "Text Prompt": "Farm-fresh produce and warm recipes for cozy fall meals.",
-                "Weight": 1.0
-            }
-        ],
-        "Generation Parameters": {
-            "Height": 896,
-            "Width": 1152,
-            "Sampler": "DDIM",
-            "Samples": 1,
-            "Steps": 50,
-            "Cfg Scale": 6,
-            "Seed": 555
-        }
-    },
-    {
-        "Prompt Title": "Fall Baking Delights",
-        "Prompts": [
-            {
-                "Text Prompt": "A delightful display of Scandinavian fall baking, featuring apple pies, swedish cinnamon rolls (Kanelbullar), and hot chocolate.",
-                "Weight": 1.0
-            }
-        ],
-        "Generation Parameters": {
-            "Height": 1152,
-            "Width": 896,
-            "Sampler": "K_LMS",
-            "Samples": 1,
-            "Steps": 50,
-            "Cfg Scale": 6,
-            "Seed": 555
-        }
-    },
-    {
-        "Prompt Title": "Scandinavian Apple Harvest",
-        "Prompts": [
-            {
-                "Text Prompt": "An abundant display of crisp Scandinavian apples, freshly harvested from the orchard, ready for delicious autumn pies.",
-                "Weight": 1.0
-            },
-            {
-                "Text Prompt": "Fresh, harvest, apples, pies, seasonal.",
-                "Weight": 1.0
-            }
-        ],
-        "Generation Parameters": {
-            "Height": 1024,
-            "Width": 1024,
-            "Sampler": "DDIM",
-            "Samples": 1,
-            "Cfg Scale": 6,
-            "Steps": 50,
-            "Seed": 555
-        }
-    },
-    {
-        "Prompt Title": "Autumn Tea Time",
-        "Prompts": [
-            {
-                "Text Prompt": "A close-up of a steaming cup of aromatic cinnamon-spiced tea with a slice of apple pie, enjoyed by the fireplace in a cozy cabin.",
-                "Weight": 1.0
-            },
-            {
-                "Text Prompt": "Comforting, fireside, aromatic, indulgent, relaxation.",
-                "Weight": 1.0
-            }
-        ],
-        "Generation Parameters": {
-            "Sampler": "K_DPMPP_2M",
-            "Samples": 1,
-            "Steps": 50,
-            "Cfg Scale": 6,
-            "Clip Guidance Preset": "FAST_BLUE",
-            "Seed": 555
-        }
-    },
-    {
-        "Prompt Title": "Elegant Christmas Dinner",
-        "Prompts": [
-            {
-                "Text Prompt": "An elegant dining featuring  Swedish Christmas feast (Julbord), crystal glasses",
-                "Weight": 1.0
-            },
-            {
-                "Text Prompt": "Formal, opulent, culinary delight, festive elegance, celebratory.",
-                "Weight": 1.0
-            }
-        ],
-        "Generation Parameters": {
-            "Sampler": "K_DPMPP_2M",
-            "Samples": 1,
-            "Steps": 50,
-            "Cfg Scale": 6,
-            "Clip Guidance Preset": "FAST_BLUE",
-            "Seed": 555
-        }
-    },
-    {
-        "Prompt Title": "Scandinavian Gingerbread Delights",
-        "Prompts": [
-            {
-                "Text Prompt": "An assortment of beautifully decorated gingerbread cookies, a beloved Scandinavian Christmas tradition.",
-                "Weight": 1.0
-            },
-            {
-                "Text Prompt": "Gingerbread, sweet, decorated, holiday treats, baking.",
-                "Weight": 1.0
-            }
-        ],
-        "Generation Parameters": {
-            "Height": 896,
-            "Width": 1152,
-            "Sampler": "K_EULER_ANCESTRAL",
-            "Samples": 1,
-            "Cfg Scale": 6,
-            "Steps": 50,
-            "Seed": 555
-        }
-    },
-        # Add more prompts for the "Grocery Summer" campaign here...
-    ],
-    # Add data for other campaigns...
-}
 
 def resize_to_nearest_multiple_of_64(image_path):
     try:
@@ -534,9 +176,6 @@ def encode_image(image_data: None, resize: bool = True) -> Union[str, None]:
 
 def load_sidebar():
     # Load generation parameters based on selected type
-
-    # Streamlit app layout
-    st.title("Generate Campaign Images")
     subheader = '### Text Prompts'
     def_sampler = 0
     def_guidance = 0
@@ -548,19 +187,19 @@ def load_sidebar():
     selected_generation_type = params.selectbox("Select Generation Type", generation_types, key="generation_type" )
 
     request = GenerationRequest()
-    if st.session_state.generation_type == "Text to Image":
+    if st.session_state.generation_type == "TEXT_IMAGE":
         # Find the selected prompt and its details
         selected_prompt = None
         values = default_params
 
         prompts.title("Select Campaign")
-        campaign_type = prompts.selectbox("Select Campaign", campaigns, key="campaign")
+        campaign_type = prompts.selectbox("Select Campaign", products.campaigns, key="campaign")
         if campaign_type and campaign_type != "NONE":
-            prompt_titles = [item["Prompt Title"] for item in prompts_data[campaign_type]]
+            prompt_titles = [item["Prompt Title"] for item in products.prompts_data[campaign_type]]
             selected_prompt_title = prompts.selectbox("Select Prompt", prompt_titles, key="prompt_title")
 
             if selected_prompt_title:
-                for prompt in prompts_data[campaign_type]:
+                for prompt in products.prompts_data[campaign_type]:
                     if prompt["Prompt Title"] == selected_prompt_title:
                         selected_prompt = prompt
                         st.session_state.selected_prompt = selected_prompt
@@ -717,21 +356,42 @@ def load_sidebar():
     st.session_state.st_request = request
 
 def getAgent():
-    assistant = stability.StabilityAssistant(endpointName)
-    return assistant
+    modelId = models[st.session_state.mode][0]
+    st.session_state.st_assistant = stability.StabilityAssistant(modelId)
 
-def generateImages(st_assistant, generation_params):
-    return st_assistant.generate(generation_params)
+def getBedrockAgent():
+    modelId = models[st.session_state.mode][0]
+    st.session_state.b_assistant = bedrock.BedrockAssistant(modelId, st.session_state.logger)
+    
 
-
+def generateImages(st_assistant,b_assistant, generation_params):
+    if st.session_state.mode == 'Amazon Bedrock API':
+        return b_assistant.generate_image(st.session_state.modelId
+                                           ,generation_params
+                                           ,generation_type = st.session_state.generation_type
+                                           , negative_prompt= negative_prompt)
+    else:
+        return st_assistant.generate(generation_params)
 
 def main():
+    # Streamlit app layout
+    st.title("Generate Ad Campaign Images")
+                    
+    mode_type = prompts.selectbox("Select Mode", providers, key="mode")
+    modelIds = [item for item in models[mode_type]]
+    model = prompts.selectbox("Select Model", modelIds, key="modelId")
+
+    keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
+    formatted_labels = [keyword_label(keyword) for keyword in keywords]
+    st.write(' '.join(formatted_labels), unsafe_allow_html=True)
+    apply_studio_style()
+            
+    if st.session_state.st_assistant is None:
+        getAgent()
+    if st.session_state.b_assistant is None:
+        getBedrockAgent()
 
     load_sidebar()
-    
-    if st.session_state.st_assistant is None:
-        st.session_state.st_assistant = getAgent()
-        
 
     # Generate button
     if st.button("Generate"):
@@ -739,7 +399,7 @@ def main():
             # API call to generate images
             #response = requests.post(API_BASE_URL + "/generate", json=generation_params)
 
-            generated_images = generateImages(st.session_state.st_assistant, st.session_state.st_request)
+            generated_images = generateImages(st.session_state.st_assistant,st.session_state.b_assistant, st.session_state.st_request)
         
             # # Display generated images
             # if response.status_code == 200:
@@ -748,18 +408,20 @@ def main():
                 st.session_state.st_images = []
                 for idx, artifact in enumerate(generated_images, start=1):
                     st.write(f"Generated Image {idx}:")
-                    image = artifact.base64
-                    image_data = base64.b64decode(image.encode())
-                    image = Image.open(io.BytesIO(image_data))
-                    #pil_image = Image.open(image_bytes)
-                    st.session_state.st_images.append({"image": image, "seed": artifact.seed})
+                    # image = artifact.base64
+                    # image_data = base64.b64decode(image.encode())
+                    # image = Image.open(io.BytesIO(image_data))
+                    # #pil_image = Image.open(image_bytes)
+                    st.session_state.st_images.append({"image": artifact})
+                    #st.session_state.st_images.append({"image": image, "seed": artifact.seed})
                     #st.image(image, caption=f'Seed: {artifact.seed}', use_column_width=True)
             else:
                 st.error("An error occurred while generating images.")
 
     if st.session_state.st_images is not None:
         for img in st.session_state.st_images:
-            st.image(img["image"], caption=f'Seed: {img["seed"]}', use_column_width=True)
+            #st.image(img["image"], caption=f'Seed: {img["seed"]}', use_column_width=True)
+            st.image(img["image"], use_column_width=True)
 
 
 @st.cache_resource
