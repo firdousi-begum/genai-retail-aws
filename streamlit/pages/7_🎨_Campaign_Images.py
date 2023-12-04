@@ -356,11 +356,11 @@ def load_sidebar():
     st.session_state.st_request = request
 
 def getAgent():
-    modelId = models[st.session_state.mode][0]
+    modelId = models['Amazon SageMaker JumpStart'][0]
     st.session_state.st_assistant = stability.StabilityAssistant(modelId)
 
 def getBedrockAgent():
-    modelId = models[st.session_state.mode][0]
+    modelId = st.session_state.modelId
     st.session_state.b_assistant = bedrock.BedrockAssistant(modelId, st.session_state.logger)
     
 
@@ -371,7 +371,7 @@ def generateImages(st_assistant,b_assistant, generation_params):
                                            ,generation_type = st.session_state.generation_type
                                            , negative_prompt= negative_prompt)
     else:
-        return st_assistant.generate(generation_params)
+        return st_assistant.generate(generation_params, endpoint_name= st.session_state.modelId)
 
 def main():
     # Streamlit app layout

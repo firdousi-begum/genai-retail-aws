@@ -101,10 +101,13 @@ def get_background():
 
     [data-testid="stSidebar"] {{
     #background-color: rgba(0, 0, 0, 0);
-    background-image: url("data:image/png;base64,{logo}"), url("data:image/png;base64,{bg_img}");
-    background-position: center 30px, center center;
-    background-repeat: no-repeat, no-repeat;
-    background-size: 138px, auto;
+    # background-image: url("data:image/png;base64,{logo}"), url("data:image/png;base64,{bg_img}");
+    # background-position: center 30px, center center;
+    # background-repeat: no-repeat, no-repeat;
+    background-image: url("data:image/png;base64,{logo}");
+    background-position: center 30px;
+    background-repeat: no-repeat;
+    background-size: 138px;
       
     }}
 

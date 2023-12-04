@@ -185,15 +185,19 @@ class BedrockAssistant():
                 "cfg_scale": generationConfig.cfg_scale,
                 "seed": generationConfig.seed,
                 "steps": generationConfig.steps,
-                "clip_guidance_preset": generationConfig.clip_guidance_preset,
-                "sampler": generationConfig.sampler,
                 "width": generationConfig.width,
-                "height": generationConfig.height
+                "height": generationConfig.height,
             }
 
             #print(generationConfig)
             if generationConfig.style_preset != 'NONE':
                 config.update({"style_preset": generationConfig.style_preset})
+
+            if generationConfig.clip_guidance_preset is not None:
+                config.update({"clip_guidance_preset": generationConfig.clip_guidance_preset})
+
+            if generationConfig.sampler is not None:
+                config.update({"sampler": generationConfig.sampler})
 
             if generationConfig.mask_source is not None:
                 config.update({
@@ -218,7 +222,7 @@ class BedrockAssistant():
                          "image_strength": generationConfig.image_strength,
                         })
             
-            #print(config)
+            print(config)
 
             body = json.dumps(config) 
             response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId)

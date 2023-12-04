@@ -374,3 +374,58 @@ prompts_data = {
     ],
     # Add data for other campaigns...
 }
+prompts_data_idea = {
+    "Retail": [
+         {
+            "Prompt Title": "Men's leather jacket in black",
+            "Prompt": "Generate a high-resolution image of a classic men's leather jacket in black. It should showcase fine stitching details and a sleek, modern design."
+        },
+         {
+            "Prompt Title": "Designer handbag",
+            "Prompt": "Generate an image of a designer handbag in rich, earthy tones, highlighting the quality craftsmanship and timeless design."
+        },
+         {
+            "Prompt Title": "Women's high-heeled shoes",
+            "Prompt": "Create an image of a stylish pair of women's high-heeled shoes in vibrant red. Emphasize the details of the shoe's design."
+        },
+         {
+            "Prompt Title": "Wide brim Summer Hat",
+            "Prompt": "Generate an image of a summer hat with a wide brim. Showcase the hat's texture and style in a simple, elegant composition."
+        },
+         {
+            "Prompt Title": "Elegant low-top sneakers",
+            "Prompt": "Imagine crafting a cutting-edge design for low-top sneakers that captures the essence of urban fashion and street culture. These sneakers should reflect the energy and style of modern city life. Incorporate bold patterns, elegant brown color, and innovative materials to create a standout look. The design should resonate with trendsetters and those seeking a dynamic and fashion-forward footwear choice."
+        },
+    ],
+    "Transport": [
+         {
+            "Prompt Title": "Luxurious SUV interior",
+            "Prompt": "Create an image of a luxurious SUV interior with premium leather seats, a state-of-the-art infotainment system, and panoramic sunroof."
+        },
+        {
+             "Prompt Title": "Compact Urban Autonomous Vehicle",
+            "Prompt": "Generate a concept image of a compact autonomous vehicle designed for urban commuting, featuring smart sensors and a spacious interior."
+        },
+        {
+             "Prompt Title": "Efficient urban delivery truck",
+            "Prompt": "Create an image of an efficient urban delivery truck optimized for city logistics, featuring an ergonomic driver cabin and eco-friendly technology."
+        }, 
+        {
+            "Prompt Title": "Truck in a Cityscape (USA)",
+            "Prompt": "Design an image of a powerful, midnight-black truck navigating the bustling streets of a dynamic American city during rush hour. Showcase its urban appeal, agility, and efficiency as it seamlessly merges with city life."
+        },
+         {
+            "Prompt Title": "Truck in a Winter Wonderland (Sweden)",
+            "Prompt": "Design an image of a powerful, midnight-black truck navigating snow-covered roads in Sweden. Illuminate the truck's safety features, advanced technology, and reliability during harsh winter conditions."
+        },
+    ],
+}
+adapter_data = {
+    "Retail": [
+         {
+            "Prompt Title": "Women's Shirt Dress Midi",
+            "Image_Source": "data/images/dress_shirt.jpg",
+            "Prompt": "White silk shirt dress, with black stitch, realistic, 4k photo, highly detailed. It should showcase fine stitching details and a sleek, modern design."
+        },
+    ],
+}

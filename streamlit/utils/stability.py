@@ -99,9 +99,11 @@ class StabilityAssistant():
         return sagemaker_client, sm_session
         
         
-    def generate(self, generationRequest = None):
+    def generate(self, generationRequest = None,endpoint_name=None):
         sm_client, sm_session= self.get_sagemaker_client()
-        deployed_model = StabilityPredictor(endpoint_name=self.im_endpoint_name, sagemaker_session=sm_session)
+        if endpoint_name is None:
+            endpoint_name = self.im_endpoint_name
+        deployed_model = StabilityPredictor(endpoint_name=endpoint_name, sagemaker_session=sm_session)
 
         if generationRequest is None:
            return
@@ -137,7 +139,7 @@ class StabilityAssistant():
         #                                     height=1024.
         #                                      ))
         
-        #print (f'Generation Req:{generationRequest}')
+        print (f'Generation Req:{generationRequest}')
         response = deployed_model.predict(generationRequest)
        
 
