@@ -53,7 +53,8 @@ models = {
     
     ],
     "Amazon SageMaker JumpStart": [
-        "sdxl-jumpstart-1-2023-08-30-23-25-11-865"
+        "sdxl-jumpstart-1-2023-08-30-23-25-11-865",
+        "huggingface-pytorch-inference-2023-11-12-17-36-53-941"
     ]
 }
 
@@ -340,14 +341,16 @@ def adaptImage(
     adapter_conditioning_factor: float = 1.0,
     guidance_scale: float = 7.5):
         negative_prompts = "ugly, tiling, poorly drawn hands, out of frame, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low quality, bad art, beginner, windy, amateur, distorted"
-        output = st.session_state.st1_assistant.adapt(img_str,
+        output = st.session_state.st1_assistant.adapt(
+                                                     img_str,
                                                      prompt,
                                                      negative_prompts,
                                                      seed, 
                                                      num_inference_steps, 
                                                      adapter_conditioning_scale,
                                                      adapter_conditioning_factor, 
-                                                     guidance_scale   )
+                                                     guidance_scale,
+                                                     endpoint_name = st.session_state.modelId)
         output.save('adapted_image.png')
         return output                  
 
@@ -361,9 +364,15 @@ def load_sidebar():
     prompts.header("Product ideator")
     selected_generation_type = prompts.selectbox("Select Generation Type", generation_types, key="generation_type" )
 
-    mode_type = prompts.selectbox("Select Image Generator", providers, key="mode")
+    mode_index = 0
+    model_index = 0
+    if selected_generation_type == "ADAPTER":
+        mode_index = providers.index('Amazon SageMaker JumpStart')
+        model_index = models['Amazon SageMaker JumpStart'].index('huggingface-pytorch-inference-2023-11-12-17-36-53-941')
+    
+    mode_type = prompts.selectbox("Select Image Generator", providers, index=mode_index, key="mode")
     modelIds = [item for item in models[mode_type]]
-    model = prompts.selectbox("Select Image Model", modelIds, key="modelId")
+    model = prompts.selectbox("Select Image Model", modelIds, index =model_index, key="modelId")
 
     keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
     formatted_labels = [keyword_label(keyword) for keyword in keywords]

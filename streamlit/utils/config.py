@@ -67,7 +67,7 @@ def get_img_as_base64(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-@st.cache_data
+@st.cache_data  
 def get_background():
     bg_img = get_img_as_base64("images/bg.png")
     logo = get_img_as_base64("images/logo.png")
@@ -123,7 +123,7 @@ def get_background():
 
     [data-testid="baseButton-secondary"] {{
     box-shadow: inset 0px -5px 5px 0px rgba(0, 0, 0, 0.5);
-    background: linear-gradient(to top, rgb(36,34,67),rgb(78, 74, 140), rgb(36,34,67));
+    background: linear-gradient(to bottom, rgb(143, 10, 86) ,rgb(168, 45, 97), rgb(143, 10, 86));
 
     }}
 

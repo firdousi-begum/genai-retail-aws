@@ -318,6 +318,7 @@ class GenAiRetailStack(core.Stack):
             security_group=load_balancer_security_group,
             assign_public_ip=True,
             vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets)
+            
         )
 
         # Elastic Load Balancer

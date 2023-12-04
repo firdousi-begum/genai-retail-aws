@@ -177,9 +177,10 @@ class StabilityAssistant():
             num_inference_steps: int = 30,
             adapter_conditioning_scale: float = 0.9,
             adapter_conditioning_factor: float = 1.0,
-            guidance_scale: float = 7.5):
+            guidance_scale: float = 7.5,
+            endpoint_name: str= ''):
         
-        endpoint_name = 'huggingface-pytorch-inference-2023-11-12-17-36-53-941'
+        #endpoint_name = 'huggingface-pytorch-inference-2023-11-12-17-36-53-941'
         #sm_client, sm_session= self.get_sagemaker_client()
         response_model = self.sm_client.invoke_endpoint(
         EndpointName=endpoint_name,
