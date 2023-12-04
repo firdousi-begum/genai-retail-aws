@@ -7,14 +7,14 @@ import aws_cdk.aws_certificatemanager as acm
 import aws_cdk.aws_cognito as cognito
 import aws_cdk.aws_ec2 as ec2
 import aws_cdk.aws_ecs as ecs
-import aws_cdk.aws_ecs_patterns as ecs_patterns
 import aws_cdk.aws_ecr_assets as ecr_assets
 import aws_cdk.aws_elasticloadbalancingv2 as elb
 import aws_cdk.aws_elasticloadbalancingv2_actions as elb_actions
-import aws_cdk.aws_lambda as _lambda
 import aws_cdk.aws_route53 as route53
-
-
+import aws_cdk.aws_route53_targets as targets
+import aws_cdk.aws_ssm as ssm
+import aws_cdk.aws_logs as logs
+from aws_cdk import aws_iam as iam
 from aws_cdk import core
 
 import configuration as configuration
@@ -43,6 +43,9 @@ class GenAiRetailStack(core.Stack):
         self.config = config
         self.app_name = self.config.app_name
 
+        self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
+        self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
+        
         self.add_cognito()
 
         self.add_streamlit_app()
@@ -157,6 +160,53 @@ class GenAiRetailStack(core.Stack):
             validation=acm.CertificateValidation.from_dns(hosted_zone)
         )
 
+        # Execution Role
+        execution_role = iam.Role(
+            self,
+            "ExecutionRole",
+            assumed_by=iam.CompositePrincipal(
+                iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+                iam.ServicePrincipal("bedrock.amazonaws.com"),
+                iam.ServicePrincipal("personalize.amazonaws.com")
+            )
+        )
+        execution_role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonECSTaskExecutionRolePolicy"))
+        execution_role.add_to_policy(iam.PolicyStatement(actions=["bedrock:*"], resources=["*"]))
+        execution_role.add_to_policy(iam.PolicyStatement(actions=["personalize:*"], resources=["*"]))
+        execution_role.add_to_policy(iam.PolicyStatement(
+            actions=["ssm:GetParameters"],
+            resources=[
+                f"arn:aws:ssm:{self.region}:{self.account}:parameter{self.os_key_path}*",
+                f"arn:aws:ssm:{self.region}:{self.account}:parameter{self.bedrock_key_path}*"
+            ]
+        ))
+
+        # Task Role
+        task_role = iam.Role(
+            self,
+            "TaskRole",
+            assumed_by=iam.CompositePrincipal(
+                iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+                iam.ServicePrincipal("bedrock.amazonaws.com"),
+                iam.ServicePrincipal("personalize.amazonaws.com")
+
+            )
+        )
+        task_role.add_to_policy(iam.PolicyStatement(actions=["ssm:DescribeParameters"], resources=["*"]))
+        task_role.add_to_policy(iam.PolicyStatement(actions=["sagemaker:InvokeEndpoint"], resources=["*"]))
+        task_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["ssm:GetParameter"],
+                resources=[
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter{self.os_key_path}*",
+                    f"arn:aws:ssm:{self.region}:{self.account}:parameter{self.bedrock_key_path}*"
+                ]
+            )
+        )
+        task_role.add_to_policy(iam.PolicyStatement(actions=["bedrock:*"], resources=["*"]))
+        task_role.add_to_policy(iam.PolicyStatement(actions=["personalize:*"], resources=["*"]))
+
+
         # Define the Docker Image for our container (the CDK will do the build and push for us!)
         docker_image = ecr_assets.DockerImageAsset(
             self,
@@ -164,82 +214,161 @@ class GenAiRetailStack(core.Stack):
             directory=os.path.join(os.path.dirname(__file__), "..")
         )
 
-        # This creates the ALB with an ECS Service on Fargate
-        fargate_service = ecs_patterns.ApplicationLoadBalancedFargateService(
+        # ECS Task Definition
+        task_definition = ecs.FargateTaskDefinition(
             self,
-            f"{self.app_name}-fargate",
-            cluster=cluster,
-            certificate=certificate,
-            domain_name=self.config.application_dns_name,
-            domain_zone=hosted_zone,
-            desired_count=int(self.config.backend_desired_count),
-            task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                image=ecs.ContainerImage.from_docker_image_asset(docker_image),
-                environment={
-                    "PORT": "80",
-                    "LOGOUT_URL": self.user_pool_logout_url,
-                    "USER_INFO_URL": self.user_pool_user_info_url,
-                }
-            ),
-            redirect_http=True
+            "TaskDefinition",
+            cpu=512,
+            memory_limit_mib=1024,
+            execution_role=execution_role,
+            task_role=task_role
         )
 
-        # # Configure the health checks to use our /healthcheck endpoint
-        # fargate_service.target_group.configure_health_check(
-        #     enabled=True,
-        #     path="/healthcheck",
-        #     healthy_http_codes="200"
-        # )
+        container = task_definition.add_container(
+            "genai-retail-streamlit-container",
+            image=ecs.ContainerImage.from_docker_image_asset(docker_image),
+            essential=True,
+            logging=ecs.LogDrivers.aws_logs(
+                stream_prefix="ecs/genai-retail-fargate",
+                log_retention=logs.RetentionDays.TWO_WEEKS
+            ),
+            secrets= {
+                "OS_ENDPOINT": ecs.Secret.from_ssm_parameter(
+                    ssm.StringParameter.from_secure_string_parameter_attributes(
+                        self, 
+                        "OsEndpoint",
+                        parameter_name=f"{self.os_key_path}endpoint",
+                        version=1
+                    )
+                ),
+                "OS_USERNAME": ecs.Secret.from_ssm_parameter(
+                    ssm.StringParameter.from_secure_string_parameter_attributes(
+                        self, 
+                        "OsUsername",
+                        parameter_name=f"{self.os_key_path}username",
+                        version=1
+                    )
+                ),
+                "OS_PASSWORD": ecs.Secret.from_ssm_parameter(
+                    ssm.StringParameter.from_secure_string_parameter_attributes(
+                        self, 
+                        "OsPassword",
+                        parameter_name=f"{self.os_key_path}password",
+                        version=1
+                    )
+                ),
+                "BR_ENDPOINT": ecs.Secret.from_ssm_parameter(
+                    ssm.StringParameter.from_secure_string_parameter_attributes(
+                        self, 
+                        "BrEndpoint",
+                        parameter_name=f"{self.bedrock_key_path}endpoint",
+                        version=1
+                    )
+                ),
+                "BR_REGION": ecs.Secret.from_ssm_parameter(
+                    ssm.StringParameter.from_secure_string_parameter_attributes(
+                        self, 
+                        "BrRegion",
+                        parameter_name=f"{self.bedrock_key_path}region",
+                        version=1
+                    )
+                )
+            }            
+        )
+        
+        container.add_port_mappings(
+            ecs.PortMapping(container_port=8501)
+        )        
 
-        # # Add an additional HTTPS egress rule to the Load Balancers
-        # # security group to talk to Cognito, by default the construct
-        # # doesn't allow the ALB to make an outbound request
-        # lb_security_group = fargate_service.load_balancer.connections.security_groups[0]
+        # Security Groups
+        load_balancer_security_group = ec2.SecurityGroup(
+            self,
+            "LoadBalancerSecurityGroup",
+            vpc=vpc,
+            description="Security group for the load balancer"
+        )
 
-        # lb_security_group.add_egress_rule(
-        #     peer=ec2.Peer.any_ipv4(),
-        #     connection=ec2.Port(
-        #         protocol=ec2.Protocol.TCP,
-        #         string_representation="443",
-        #         from_port=443,
-        #         to_port=443
-        #     ),
-        #     description="Outbound HTTPS traffic to get to Cognito"
-        # )
+        load_balancer_security_group.add_ingress_rule(
+            ec2.Peer.ipv4("0.0.0.0/0"),
+            ec2.Port.tcp(80),
+            "Allow inbound traffic on port 80"
+        )
 
-        # # Allow 10 seconds for in flight requests before termination,
-        # # the default of 5 minutes is much too high.
-        # fargate_service.target_group.set_attribute(
-        #     key="deregistration_delay.timeout_seconds",
-        #     value="10"
-        # )
+        ecs_security_group = ec2.SecurityGroup(
+            self,
+            "EcsSecurityGroup",
+            vpc=vpc,
+            description="Security group for the ECS service"
+        )
+        ecs_security_group.add_ingress_rule(
+            load_balancer_security_group,
+            ec2.Port.tcp(8501),
+            "Allow inbound traffic from the load balancer on port 8501"
+        )
 
-        # # Add the authentication actions as a rule with priority
-        # fargate_service.listener.add_action(
-        #     "authenticate-rule",
-        #     priority=1000,
-        #     action=elb_actions.AuthenticateCognitoAction(
-        #         next=elb.ListenerAction.forward(
-        #             target_groups=[
-        #                 fargate_service.target_group
-        #             ]
-        #         ),
-        #         user_pool=self.user_pool,
-        #         user_pool_client=self.user_pool_client,
-        #         user_pool_domain=self.user_pool_custom_domain,
+        # ECS Service
+        service = ecs.FargateService(
+            self,
+            "Service",
+            cluster=cluster,
+            desired_count=1,
+            task_definition=task_definition,
+            security_group=load_balancer_security_group,
+            assign_public_ip=True,
+            vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets)
+        )
 
-        #     ),
-        #     host_header=self.config.application_dns_name
-        # )
+        # Elastic Load Balancer
+        target_group = elb.ApplicationTargetGroup(
+            self,
+            "TargetGroup",
+            port=80,
+            targets=[service],
+            vpc=vpc,
+            target_type=elb.TargetType.IP
+        )
 
-        # # Overwrite the default action to show a 403 fixed response in case somebody
-        # # accesses the website via the alb URL directly
-        # cfn_listener: elb.CfnListener = fargate_service.listener.node.default_child
-        # cfn_listener.default_actions = [{
-        #     "type": "fixed-response",
-        #     "fixedResponseConfig": {
-        #         "statusCode": "403",
-        #         "contentType": "text/plain",
-        #         "messageBody": "This is not a valid endpoint!"
-        #     }
-        # }]
+        load_balancer = elb.ApplicationLoadBalancer(
+            self,
+            "LoadBalancer",
+            vpc=vpc,
+            internet_facing=True,
+            security_group=load_balancer_security_group
+        )
+
+        load_balancer.add_listener(
+            "Listener", 
+            port=80,
+            default_action=elb.ListenerAction.forward([target_group])
+        )
+
+        https_listener = load_balancer.add_listener(
+            "HttpsSListener", 
+            port=443,
+            default_action=elb.ListenerAction.forward([target_group]),
+            certificates=[certificate]
+        )
+
+        https_listener.add_action(
+            "authenticate-rule",
+            priority=1000,
+            action=elb_actions.AuthenticateCognitoAction(
+                next=elb.ListenerAction.forward(
+                    target_groups=[
+                        target_group
+                    ]
+                ),
+                user_pool=self.user_pool,
+                user_pool_client=self.user_pool_client,
+                user_pool_domain=self.user_pool_custom_domain
+            ),
+            host_header=self.config.application_dns_name
+        )
+
+        route53.ARecord(
+            self, 
+            "AliasRecord",
+            zone=hosted_zone,
+            target=route53.RecordTarget.from_alias(targets.LoadBalancerTarget(load_balancer)),
+            record_name=self.config.application_dns_name
+        )
