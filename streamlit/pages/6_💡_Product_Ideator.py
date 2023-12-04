@@ -195,7 +195,7 @@ def call_bedrock_titan(prompt_text, max_token_count=1024, temperature=1, top_p=1
 
 
 def call_bedrock_claude_2(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
-    model_id = "anthropic.claude-v2:1"
+    model_id = "anthropic.claude-v2"
     st.session_state.text_model_id = model_id
 
     body = {
@@ -209,6 +209,7 @@ def call_bedrock_claude_2(prompt_text, max_tokens_to_sample=1024, temperature=1,
 
 def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
     model_id = "anthropic.claude-v1"
+    print('hello CLAUDE 1')
     st.session_state.text_model_id = model_id
 
     body = {
@@ -220,6 +221,20 @@ def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1,
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
 
+def call_bedrock_claude_2_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
+    model_id = "anthropic.claude-v2:1"
+    print('hello CLAUDE 2.1')
+    st.session_state.text_model_id = model_id
+
+    body = {
+        "prompt": "Human:"+prompt_text+"\n\nAssistant:",
+        "max_tokens_to_sample": max_tokens_to_sample
+    }
+    body_string = json.dumps(body)
+    body = bytes(body_string, 'utf-8')
+
+    result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+    
    
     # response = bedrock.invoke_model(
     #     modelId = model_id,
@@ -235,6 +250,7 @@ def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1,
 
 def call_bedrock_jurassic(prompt_text, max_token_count=1024, temperature=1, top_p=1, stop_sequences=[]):
     model_id = "ai21.j2-jumbo-instruct"
+
     st.session_state.text_model_id = model_id
 
     body_string = "{\"prompt\":\"" + f"{prompt_text}" + "\"" +\
@@ -267,7 +283,7 @@ text_models = {
     "bedrock titan" : call_bedrock_titan,
     "bedrock claude 2" : call_bedrock_claude_2,
     "bedrock claude instant 1" : call_bedrock_claude_2,
-    "bedrock claude 2.1" : call_bedrock_claude_2,
+    "bedrock claude 2.1" : call_bedrock_claude_2_1,
     "bedrock claude" : call_bedrock_claude_1,
     "bedrock jurassic-2" : call_bedrock_jurassic
 }
@@ -344,6 +360,16 @@ def getAgent():
 def load_sidebar():
     prompts.header("Product ideator")
     selected_generation_type = prompts.selectbox("Select Generation Type", generation_types, key="generation_type" )
+
+    mode_type = prompts.selectbox("Select Image Generator", providers, key="mode")
+    modelIds = [item for item in models[mode_type]]
+    model = prompts.selectbox("Select Image Model", modelIds, key="modelId")
+
+    keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
+    formatted_labels = [keyword_label(keyword) for keyword in keywords]
+    st.write(' '.join(formatted_labels), unsafe_allow_html=True)
+    apply_studio_style()
+
     prompts.markdown("### Make your pick")
     idea = ''
     industry = ''
@@ -359,8 +385,8 @@ def load_sidebar():
             product_idea = prompts.selectbox("Select an example Product", prompt_titles, key="prompt_title")
 
 
-        fms = ['Bedrock Claude Instant v1','Bedrock Claude 2.1','Bedrock Claude','Bedrock Claude 2','Bedrock Jurassic-2']
-        default_model = fms.index('Bedrock Claude')
+        fms = ['Bedrock Claude Instant 1','Bedrock Claude 2.1','Bedrock Claude','Bedrock Claude 2','Bedrock Jurassic-2']
+        default_model = fms.index('Bedrock Claude 2.1')
         text_model = prompts.selectbox(
             'Select a Text FM',
             options=fms, index=default_model, key="text_model")
@@ -389,19 +415,20 @@ def load_sidebar():
         image = ''
         
         init_image = st.file_uploader("Upload Initial Image", type=["jpg", "jpeg", "png"])
-        for prompt in adapter_data[industry]:
-            if prompt["Prompt Title"] == product_idea:
-                product_html = f'#### <span style="color: #00FFFF;"> Product Idea: {product_idea}</span>'
-                st.markdown(product_html, unsafe_allow_html=True)
-                selected_prompt = prompt
-                idea = selected_prompt['Prompt']
-                image = encode_image(selected_prompt['Image_Source'])
-                st.session_state.image = image
+        if init_image is None:
+            for prompt in adapter_data[industry]:
+                if prompt["Prompt Title"] == product_idea:
+                    product_html = f'#### <span style="color: #00FFFF;"> Product Idea: {product_idea}</span>'
+                    st.markdown(product_html, unsafe_allow_html=True)
+                    selected_prompt = prompt
+                    idea = selected_prompt['Prompt']
+                    image = encode_image(selected_prompt['Image_Source'])
+                    st.session_state.init_image = image
 
         
         if init_image is not None:
             image = encode_image(init_image)
-            st.session_state.image = image
+            st.session_state.init_image = image
 
         input_text = st.text_area('**What is your product idea?**', key='prod_text', value=idea)
 
@@ -412,15 +439,6 @@ def main():
     # Streamlit app layout
     
     st.markdown("# Take your product idea to the next level")
-
-    mode_type = prompts.selectbox("Select Image Generator", providers, key="mode")
-    modelIds = [item for item in models[mode_type]]
-    model = prompts.selectbox("Select Image Model", modelIds, key="modelId")
-
-    keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
-    formatted_labels = [keyword_label(keyword) for keyword in keywords]
-    st.write(' '.join(formatted_labels), unsafe_allow_html=True)
-    apply_studio_style()
 
     load_sidebar()
                     
@@ -468,7 +486,7 @@ def main():
         elif st.session_state.generation_type == "ADAPTER":
             with st.spinner("Generating Product Idea..."):
                 st.image(
-                    adaptImage( st.session_state.image,st.session_state.prod_text)
+                    adaptImage( st.session_state.init_image,st.session_state.prod_text)
                 )
                 # if st.session_state.image is not None:
                 #     # if st.button("Adapt"):

@@ -22,6 +22,7 @@ class StabilityAssistant():
         self.logger = logger
         self.token_expiration = None
         self.im_endpoint_name = modelId
+        self.sm_client, self.sm_session = self.get_sagemaker_client()
 
     def get_sagemaker_client(self,
     assumed_role: Optional[str] = None,
@@ -45,24 +46,32 @@ class StabilityAssistant():
             If not specified, AWS_REGION or AWS_DEFAULT_REGION environment variable will be used.
         """
 
-        region =  self.region
-        aws_access_key_id = self.key
-        aws_secret_access_key =  self.secret
-        aws_session_token = self.sessionToken
+        region = self.region if region is None else region
+        aws_access_key_id = self.key if aws_access_key_id is None else aws_access_key_id
+        aws_secret_access_key = self.secret if aws_secret_access_key is None else aws_secret_access_key 
+        aws_session_token = self.sessionToken if aws_session_token is None else aws_session_token 
+
+        #assumed_role = 'arn:aws:iam::961655544410:role/FibegBedrockAccess'
 
         if region is None:
             target_region = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION"))
         else:
             target_region = region
 
+        print(f'Keys: Access Key ID: {aws_access_key_id}, Secret: {aws_secret_access_key}, Region: {target_region}  ')
+
+
         print(f"Create new client\n  Using region: {target_region}")
-        session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
+        session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
         client_kwargs = {**session_kwargs}
 
-        profile_name = os.environ.get("AWS_PROFILE")
-        if profile_name:
-            print(f"  Using profile: {profile_name}")
-            session_kwargs["profile_name"] = profile_name
+        # session = boto3.Session(region_name='us-west-2')
+        # bedrock_client = session.client( service_name='bedrock-runtime')
+
+        # profile_name = os.environ.get("AWS_PROFILE")
+        # if profile_name:
+        #     print(f"  Using profile: {profile_name}")
+        #     session_kwargs["profile_name"] = profile_name
 
         retry_config = Config(
             region_name=target_region,
@@ -84,7 +93,9 @@ class StabilityAssistant():
             client_kwargs["aws_access_key_id"] = response["Credentials"]["AccessKeyId"]
             client_kwargs["aws_secret_access_key"] = response["Credentials"]["SecretAccessKey"]
             client_kwargs["aws_session_token"] = response["Credentials"]["SessionToken"]
-        
+
+        # if endpoint_url:
+        #     client_kwargs["endpoint_url"] = endpoint_url
 
         sagemaker_client = session.client(
             service_name="sagemaker-runtime",
@@ -99,7 +110,7 @@ class StabilityAssistant():
         return sagemaker_client, sm_session
         
         
-    def generate(self, generationRequest = None,endpoint_name=None):
+    def generate(self, generationRequest = None,endpoint_name=None,):
         sm_client, sm_session= self.get_sagemaker_client()
         if endpoint_name is None:
             endpoint_name = self.im_endpoint_name
@@ -139,7 +150,7 @@ class StabilityAssistant():
         #                                     height=1024.
         #                                      ))
         
-        print (f'Generation Req:{generationRequest}')
+        #print (f'Generation Req:{generationRequest}')
         response = deployed_model.predict(generationRequest)
        
 
@@ -170,8 +181,8 @@ class StabilityAssistant():
             guidance_scale: float = 7.5):
         
         endpoint_name = 'huggingface-pytorch-inference-2023-11-12-17-36-53-941'
-        sm_client, sm_session= self.get_sagemaker_client()
-        response_model = sm_client.invoke_endpoint(
+        #sm_client, sm_session= self.get_sagemaker_client()
+        response_model = self.sm_client.invoke_endpoint(
         EndpointName=endpoint_name,
         Body=json.dumps(
             {

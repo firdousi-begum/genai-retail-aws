@@ -93,7 +93,7 @@ def get_background():
     # background-repeat: no-repeat;
     # background-size: 100% 100%;  
     # background-position: 50% 0%;
-    background: url("data:image/png;base64,{logo}") 3% center/138px no-repeat, linear-gradient(to right, rgb(36,34,67) 40%,rgb(76,19,138) 70%, rgb(205,54,117));
+    background: url("data:image/png;base64,{logo}") 6% center/138px no-repeat, linear-gradient(to right, rgb(36,34,67) 40%,rgb(76,19,138) 70%, rgb(205,54,117));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -108,6 +108,7 @@ def get_background():
     background-position: center 30px;
     background-repeat: no-repeat;
     background-size: 138px;
+    position:relative;
       
     }}
 

@@ -222,7 +222,7 @@ class BedrockAssistant():
                          "image_strength": generationConfig.image_strength,
                         })
             
-            print(config)
+            #print(config)
 
             body = json.dumps(config) 
             response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId)
@@ -328,7 +328,7 @@ class BedrockAssistant():
         response_body = json.loads(response.get('body').read())
         #print(f'Claude response: {response_body}')
 
-        if modelId == "anthropic.claude-v2" or modelId == "anthropic.claude-v1" or modelId== "anthropic.claude-instant-v1":
+        if "claude" in modelId:
             outputText = response_body['completion']
         elif modelId == "ai21.j2-jumbo-instruct":
             # response_lines = response['body'].readlines()

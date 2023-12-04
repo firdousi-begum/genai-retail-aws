@@ -377,9 +377,9 @@ def main():
     # Streamlit app layout
     st.title("Generate Ad Campaign Images")
                     
-    mode_type = prompts.selectbox("Select Mode", providers, key="mode")
+    mode_type = params.selectbox("Select Image Generator", providers, key="mode")
     modelIds = [item for item in models[mode_type]]
-    model = prompts.selectbox("Select Model", modelIds, key="modelId")
+    model = params.selectbox("Select Image Model", modelIds, key="modelId")
 
     keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
     formatted_labels = [keyword_label(keyword) for keyword in keywords]
