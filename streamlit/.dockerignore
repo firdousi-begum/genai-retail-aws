@@ -1,0 +1,6 @@
+cdk.out/
+cdk.json
+.env/
+.vscode/
+tests/
+Infrastructure/
