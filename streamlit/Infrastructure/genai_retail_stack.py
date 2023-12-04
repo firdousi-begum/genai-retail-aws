@@ -321,6 +321,17 @@ class GenAiRetailStack(core.Stack):
             
         )
 
+        # Setup AutoScaling policy
+        scaling = service.auto_scale_task_count(
+            max_capacity=4
+        )
+        scaling.scale_on_cpu_utilization(
+            "CpuScaling",
+            target_utilization_percent=80,
+            scale_in_cooldown=core.Duration.seconds(60),
+            scale_out_cooldown=core.Duration.seconds(60),
+        )
+
         # Elastic Load Balancer
         target_group = elb.ApplicationTargetGroup(
             self,
