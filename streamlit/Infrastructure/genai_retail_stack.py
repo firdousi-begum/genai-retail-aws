@@ -208,10 +208,12 @@ class GenAiRetailStack(core.Stack):
 
 
         # Define the Docker Image for our container (the CDK will do the build and push for us!)
+        path = os.path.join(os.path.dirname(__file__), "..")
+        print(path)
         docker_image = ecr_assets.DockerImageAsset(
             self,
             f"{self.app_name}",
-            directory=os.path.join(os.path.dirname(__file__), "..")
+            directory=path
         )
 
         # ECS Task Definition

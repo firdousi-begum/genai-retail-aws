@@ -7,7 +7,15 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install graphviz git dos2unix unzip curl -y
 
-COPY . .
+COPY utils/ ./utils/
+COPY pages/ ./pages/
+COPY images/ ./images/
+COPY data/ ./data/
+COPY .streamlit/ ./.streamlit/
+COPY *.txt .
+COPY *.py .
+COPY *.jpg .
+COPY *.yml .
 
 RUN pip3 install -r requirements.txt
 

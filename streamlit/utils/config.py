@@ -67,7 +67,7 @@ def get_img_as_base64(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-#@st.cache_data
+@st.cache_data
 def get_background():
     bg_img = get_img_as_base64("images/bg.png")
     logo = get_img_as_base64("images/logo.png")
