@@ -150,12 +150,6 @@ def sdxl_decode_and_show(model_response: GenerationResponse) -> None:
         image = artifact.base64
         image_data = base64.b64decode(image.encode())
         image = Image.open(io.BytesIO(image_data))
-        #pil_image = Image.open(image_bytes)
-        #st.session_state.st_images.append({"image": image, "seed": artifact.seed})
-        #st.image(image, caption=f'Seed: {artifact.seed}', use_column_width=True)
-    # image = model_response.artifacts[0].base64
-    # image_data = base64.b64decode(image.encode())
-    # image = Image.open(io.BytesIO(image_data))
 
     return image
 
@@ -181,17 +175,6 @@ def call_bedrock_titan(prompt_text, max_token_count=1024, temperature=1, top_p=1
     body = bytes(body_string, 'utf-8')
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
 
-
-    # response = bedrock.invoke_model(
-    #     modelId = model_id,
-    #     contentType = "application/json",
-    #     accept = "application/json",
-    #     body = body)
-    # response_lines = response['body'].readlines()
-    # json_str = response_lines[0].decode('utf-8')
-
-    # json_obj = json.loads(json_str)
-    # result_text = json_obj['results'][0]['outputText']
     return result_text
 
 
