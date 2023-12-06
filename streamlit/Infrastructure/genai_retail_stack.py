@@ -390,7 +390,7 @@ class GenAiRetailStack(Stack):
             #     self.custom_header_name: self.custom_header_value
             # },
             origin_shield_enabled=False,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
         )
 
         cloudfront_distribution = cloudfront.Distribution(
