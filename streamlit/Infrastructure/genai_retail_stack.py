@@ -369,7 +369,7 @@ class GenAiRetailStack(Stack):
 
         https_listener.add_action(
             "authenticate-rule",
-            priority=1000,
+            # priority=1000,
             action=elb_actions.AuthenticateCognitoAction(
                 next=elb.ListenerAction.forward(
                     target_groups=[
@@ -380,7 +380,7 @@ class GenAiRetailStack(Stack):
                 user_pool_client=self.user_pool_client,
                 user_pool_domain=self.user_pool_custom_domain
             ),
-            conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
+            # conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
         )
 
         # Add ALB as CloudFront Origin
