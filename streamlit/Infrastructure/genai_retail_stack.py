@@ -14,6 +14,8 @@ import aws_cdk.aws_route53 as route53
 import aws_cdk.aws_route53_targets as targets
 import aws_cdk.aws_ssm as ssm
 import aws_cdk.aws_logs as logs
+from aws_cdk import aws_cloudfront as cloudfront
+from aws_cdk.aws_cloudfront_origins import LoadBalancerV2Origin
 from aws_cdk import aws_iam as iam
 from aws_cdk import Stack, Duration
 from constructs import Construct
@@ -303,6 +305,7 @@ class GenAiRetailStack(Stack):
             vpc=vpc,
             description="Security group for the ECS service"
         )
+
         ecs_security_group.add_ingress_rule(
             load_balancer_security_group,
             ec2.Port.tcp(8501),
@@ -380,10 +383,33 @@ class GenAiRetailStack(Stack):
             conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
         )
 
+        # Add ALB as CloudFront Origin
+        origin = LoadBalancerV2Origin(
+            load_balancer,
+            # custom_headers={
+            #     self.custom_header_name: self.custom_header_value
+            # },
+            origin_shield_enabled=False,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+        )
+
+        cloudfront_distribution = cloudfront.Distribution(
+            self,
+            f"{self.app_name}-cf-dist",
+            default_behavior=cloudfront.BehaviorOptions(
+                origin=origin,
+                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
+                cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+                origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
+            ),
+            minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+        )
+
         route53.ARecord(
             self, 
             "AliasRecord",
             zone=hosted_zone,
-            target=route53.RecordTarget.from_alias(targets.LoadBalancerTarget(load_balancer)),
+            target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(cloudfront_distribution)),
             record_name=self.config.application_dns_name
         )
