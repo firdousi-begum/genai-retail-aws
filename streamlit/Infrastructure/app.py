@@ -20,7 +20,7 @@ def main():
 
     cert_stack = CertificateStack(
         app,
-        "genai-retail-cert-stack",
+        "genai-retail-cert",
         config=get_config(),
         env=env_us,
         cross_region_references=True
