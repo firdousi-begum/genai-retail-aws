@@ -1,7 +1,7 @@
 import streamlit as st
 from utils.studio_style import apply_studio_style
 from utils.studio_style import keyword_label
-from utils import bedrock, config
+from utils import bedrock, config, studio_style
 import logging
 
 st.set_page_config(
@@ -9,7 +9,7 @@ st.set_page_config(
     page_icon="🛒",
 )
 
-config.get_background()
+studio_style.apply_app_styling()
 
 def generate_description(product_name, product_features, persona = None):
     

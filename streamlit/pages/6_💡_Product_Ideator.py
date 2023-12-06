@@ -14,14 +14,14 @@ from typing import Union
 from utils.products import prompts_data_idea, adapter_data
 from utils.studio_style import apply_studio_style
 from utils.studio_style import keyword_label
-from utils import config
+from utils import studio_style
 import io
 import base64
 import logging
 # End SDXL imports
 
 st.set_page_config(page_title="Product Ideator", page_icon="high_brightness")
-config.get_background()
+studio_style.apply_app_styling()
 
 if "st1_assistant" not in st.session_state:
     st.session_state.st1_assistant = None

@@ -1,10 +1,10 @@
 import streamlit as st
-from utils import config
+from utils import studio_style, config
 
 st.set_page_config(
     page_title="Generative AI for Retail",
     page_icon="🛒",
 )
 
-config.get_background()
+studio_style.apply_app_styling()
 config.getEnvCredentials()

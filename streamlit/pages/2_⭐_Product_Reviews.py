@@ -4,7 +4,7 @@ from utils.studio_style import apply_studio_style
 from utils.studio_style import keyword_label, sentiment_label
 from utils import langchain
 from utils import bedrock
-from utils import config
+from utils import studio_style
 from datetime import datetime
 import pandas as pd
 import json
@@ -15,7 +15,7 @@ st.set_page_config(
     page_icon="🛒",
 )
 
-config.get_background()
+studio_style.apply_app_styling()
 
 # Read the CSV file
 @st.cache_data

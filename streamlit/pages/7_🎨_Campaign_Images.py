@@ -7,14 +7,14 @@ from PIL import Image
 import io
 import logging
 from typing import Union
-from utils import config, products
+from utils import products, studio_style
 from utils.studio_style import keyword_label,  apply_studio_style
 from stability_sdk.api import GenerationRequest, GenerationResponse, TextPrompt, InitImageMode, GuidancePreset, Sampler, MaskSource
 
 
 # Page configuration
 st.set_page_config(page_title="Generate Images - Stability.AI", page_icon="🎨")
-config.get_background()
+studio_style.apply_app_styling()
 
 endpointName ='sdxl-jumpstart-1-2023-08-30-23-25-11-865'
 
