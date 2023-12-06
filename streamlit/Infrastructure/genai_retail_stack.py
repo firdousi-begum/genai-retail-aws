@@ -440,6 +440,7 @@ class GenAiRetailStack(Stack):
             self,
             f"{self.app_name}-cf-dist",
             domain_names=[self.config.application_dns_name],
+            certificate=self.certificate,
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
