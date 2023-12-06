@@ -22,46 +22,44 @@ from constructs import Construct
 
 import configuration as configuration
 
-class CertificateStack(Stack):
-    """
-    Provision ACM Certificate in us-east-1 region.
-    It is required for cloud front distribution
-    """
+# class CertificateStack(Stack):
+#     """
+#     Provision ACM Certificate in us-east-1 region.
+#     It is required for cloud front distribution
+#     """
 
-    config: configuration.Config
+#     config: configuration.Config
 
-    def __init__(self, scope: Construct, id: str,
-                config: configuration.Config,  **kwargs) -> None:
-        super().__init__(scope, id, **kwargs)
+#     def __init__(self, scope: Construct, id: str,
+#                 config: configuration.Config,  **kwargs) -> None:
+#         super().__init__(scope, id, **kwargs)
 
-        self.config = config
-        self.app_name = self.config.app_name
+#         self.config = config
+#         self.app_name = self.config.app_name
 
-        # Load the hosted zone
-        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
-            self,
-            "hosted-zone",
-            hosted_zone_id=self.config.hosted_zone_id,
-            zone_name=self.config.hosted_zone_name
-        )
+#         # Load the hosted zone
+#         hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+#             self,
+#             "hosted-zone",
+#             hosted_zone_id=self.config.hosted_zone_id,
+#             zone_name=self.config.hosted_zone_name
+#         )
 
-        # Create a Certificate for the Cloudfront
-        certificate = acm.Certificate(
-            self,
-            f"{self.app_name}-cert",
-            domain_name=self.config.application_dns_name,
-            validation=acm.CertificateValidation.from_dns(hosted_zone)
-        )
+#         # Create a Certificate for the Cloudfront
+#         certificate = acm.Certificate(
+#             self,
+#             f"{self.app_name}-cert",
+#             domain_name=self.config.application_dns_name,
+#             validation=acm.CertificateValidation.from_dns(hosted_zone)
+#         )
 
-        # CfnOutput(self, "cert_arn", value=certificate.certificate_arn)
+#         # We assign the cert to a local variable for the Object.
+#         self._certificate = certificate
 
-        # We assign the function to a local variable for the Object.
-        self._certificate = certificate
-
-    # Using the property decorator
-    @property
-    def main_cert(self) -> acm.Certificate:
-        return self._certificate
+#     # Using the property decorator
+#     @property
+#     def main_cert(self) -> acm.Certificate:
+#         return self._certificate
 
 class GenAiRetailStack(Stack):
     """
@@ -80,13 +78,13 @@ class GenAiRetailStack(Stack):
     user_pool_user_info_url: str
     app_name: str
 
-    def __init__(self, scope: Construct, id: str, # certificate: acm.Certificate,
+    def __init__(self, scope: Construct, id: str,
                  config: configuration.Config,  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         self.config = config
         self.app_name = self.config.app_name
-        # self.certificate = certificate
+        self.cert_arn = "arn:aws:acm:us-east-1:447598836120:certificate/29ae2ecc-fb35-488c-93b1-c274af961490"
 
         self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
         self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
@@ -197,10 +195,17 @@ class GenAiRetailStack(Stack):
             zone_name=self.config.hosted_zone_name
         )
 
+        cf_cert = acm.Certificate.from_certificate_arn(
+            self,
+            f"{self.app_name}-cf-cert",
+            certificate_arn=self.cert_arn
+        )
+
         # Create a Certificate for the ALB
-        certificate = acm.Certificate(
+        lb_cert = acm.Certificate(
             self,
             f"{self.app_name}-certificate",
+            certificate_name=f"{self.app_name}-certificate",
             domain_name=self.config.application_dns_name,
             validation=acm.CertificateValidation.from_dns(hosted_zone)
         )
@@ -391,28 +396,27 @@ class GenAiRetailStack(Stack):
         load_balancer = elb.ApplicationLoadBalancer(
             self,
             "LoadBalancer",
-            # load_balancer_name=f"{self.app_name}-alb",
+            load_balancer_name=f"{self.app_name}-fargate-lb",
             vpc=vpc,
             internet_facing=True,
             security_group=load_balancer_security_group
         )
 
-        http_listener = load_balancer.add_listener(
-            "Listener", 
-            port=80,
-            default_action=elb.ListenerAction.forward([target_group])
-        )
+        # http_listener = load_balancer.add_listener(
+        #     "Listener", 
+        #     port=80,
+        #     default_action=elb.ListenerAction.forward([target_group])
+        # )
 
         https_listener = load_balancer.add_listener(
             "HttpsSListener", 
             port=443,
             default_action=elb.ListenerAction.forward([target_group]),
-            certificates=[certificate]
+            certificates=[lb_cert]
         )
 
         https_listener.add_action(
             "authenticate-rule",
-            # priority=1000,
             action=elb_actions.AuthenticateCognitoAction(
                 next=elb.ListenerAction.forward(
                     target_groups=[
@@ -422,16 +426,12 @@ class GenAiRetailStack(Stack):
                 user_pool=self.user_pool,
                 user_pool_client=self.user_pool_client,
                 user_pool_domain=self.user_pool_custom_domain
-            ),
-            # conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
+            )
         )
 
         # Add ALB as CloudFront Origin
         origin = LoadBalancerV2Origin(
             load_balancer,
-            # custom_headers={
-            #     self.custom_header_name: self.custom_header_value
-            # },
             origin_shield_enabled=False,
             protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
         )
@@ -439,8 +439,8 @@ class GenAiRetailStack(Stack):
         cloudfront_distribution = cloudfront.Distribution(
             self,
             f"{self.app_name}-cf-dist",
-            # domain_names=[self.config.application_dns_name],
-            # certificate=self.certificate,
+            domain_names=[self.config.application_dns_name],
+            certificate=cf_cert,
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,

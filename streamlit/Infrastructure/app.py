@@ -3,7 +3,7 @@
 import os
 import aws_cdk as core
 
-from genai_retail_stack import GenAiRetailStack, CertificateStack
+from genai_retail_stack import GenAiRetailStack
 from configuration import get_config
 
 # Set the AWS account and region
@@ -30,9 +30,7 @@ def main():
         app,
         "genai-retail-fargate",
         config=get_config(),
-        # certificate=cert_stack.main_cert,
-        env=env,
-        cross_region_references=True
+        env=env
     )
 
     app.synth()
