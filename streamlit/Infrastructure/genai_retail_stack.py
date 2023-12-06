@@ -80,13 +80,13 @@ class GenAiRetailStack(Stack):
     user_pool_user_info_url: str
     app_name: str
 
-    def __init__(self, scope: Construct, id: str, certificate: acm.Certificate,
+    def __init__(self, scope: Construct, id: str, # certificate: acm.Certificate,
                  config: configuration.Config,  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         self.config = config
         self.app_name = self.config.app_name
-        self.certificate = certificate
+        # self.certificate = certificate
 
         self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
         self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
@@ -439,8 +439,8 @@ class GenAiRetailStack(Stack):
         cloudfront_distribution = cloudfront.Distribution(
             self,
             f"{self.app_name}-cf-dist",
-            domain_names=[self.config.application_dns_name],
-            certificate=self.certificate,
+            # domain_names=[self.config.application_dns_name],
+            # certificate=self.certificate,
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,

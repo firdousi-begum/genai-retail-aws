@@ -18,19 +18,19 @@ def main():
     """Wrapper for the CDK app"""
     app = core.App()
 
-    cert_stack = CertificateStack(
-        app,
-        "genai-retail-cert",
-        config=get_config(),
-        env=env_us,
-        cross_region_references=True
-    )
+    # cert_stack = CertificateStack(
+    #     app,
+    #     "genai-retail-cert",
+    #     config=get_config(),
+    #     env=env_us,
+    #     cross_region_references=True
+    # )
 
     GenAiRetailStack(
         app,
         "genai-retail-fargate",
         config=get_config(),
-        certificate=cert_stack.main_cert,
+        # certificate=cert_stack.main_cert,
         env=env,
         cross_region_references=True
     )
