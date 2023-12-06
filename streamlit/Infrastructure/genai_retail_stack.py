@@ -17,10 +17,51 @@ import aws_cdk.aws_logs as logs
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk.aws_cloudfront_origins import LoadBalancerV2Origin
 from aws_cdk import aws_iam as iam
-from aws_cdk import Stack, Duration
+from aws_cdk import Stack, Duration, CfnOutput
 from constructs import Construct
 
 import configuration as configuration
+
+class CertificateStack(Stack):
+    """
+    Provision ACM Certificate in us-east-1 region.
+    It is required for cloud front distribution
+    """
+
+    config: configuration.Config
+
+    def __init__(self, scope: Construct, id: str,
+                config: configuration.Config,  **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        self.config = config
+        self.app_name = self.config.app_name
+
+        # Load the hosted zone
+        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+            self,
+            "hosted-zone",
+            hosted_zone_id=self.config.hosted_zone_id,
+            zone_name=self.config.hosted_zone_name
+        )
+
+        # Create a Certificate for the Cloudfront
+        certificate = acm.Certificate(
+            self,
+            f"{self.app_name}-cert",
+            domain_name=self.config.application_dns_name,
+            validation=acm.CertificateValidation.from_dns(hosted_zone)
+        )
+
+        # CfnOutput(self, "cert_arn", value=certificate.certificate_arn)
+
+        # We assign the function to a local variable for the Object.
+        self._certificate = certificate
+
+    # Using the property decorator
+    @property
+    def main_cert(self) -> acm.Certificate:
+        return self._certificate
 
 class GenAiRetailStack(Stack):
     """
@@ -39,12 +80,13 @@ class GenAiRetailStack(Stack):
     user_pool_user_info_url: str
     app_name: str
 
-    def __init__(self, scope: Construct, id: str,
+    def __init__(self, scope: Construct, id: str, certificate: acm.Certificate,
                  config: configuration.Config,  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         self.config = config
         self.app_name = self.config.app_name
+        self.certificate = certificate
 
         self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
         self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
@@ -155,13 +197,13 @@ class GenAiRetailStack(Stack):
             zone_name=self.config.hosted_zone_name
         )
 
-        # Create a Certificate for the ALB
-        certificate = acm.Certificate(
-            self,
-            f"{self.app_name}-certificate",
-            domain_name=self.config.application_dns_name,
-            validation=acm.CertificateValidation.from_dns(hosted_zone)
-        )
+        # # Create a Certificate for the ALB
+        # certificate = acm.Certificate(
+        #     self,
+        #     f"{self.app_name}-certificate",
+        #     domain_name=self.config.application_dns_name,
+        #     validation=acm.CertificateValidation.from_dns(hosted_zone)
+        # )
 
         # Execution Role
         execution_role = iam.Role(
@@ -349,25 +391,26 @@ class GenAiRetailStack(Stack):
         load_balancer = elb.ApplicationLoadBalancer(
             self,
             "LoadBalancer",
+            load_balancer_name=f"{self.app_name}-alb",
             vpc=vpc,
             internet_facing=True,
             security_group=load_balancer_security_group
         )
 
-        load_balancer.add_listener(
+        http_listener = load_balancer.add_listener(
             "Listener", 
             port=80,
             default_action=elb.ListenerAction.forward([target_group])
         )
 
-        https_listener = load_balancer.add_listener(
-            "HttpsSListener", 
-            port=443,
-            default_action=elb.ListenerAction.forward([target_group]),
-            certificates=[certificate]
-        )
+        # https_listener = load_balancer.add_listener(
+        #     "HttpsSListener", 
+        #     port=443,
+        #     default_action=elb.ListenerAction.forward([target_group]),
+        #     certificates=[self.certificate]
+        # )
 
-        https_listener.add_action(
+        http_listener.add_action(
             "authenticate-rule",
             # priority=1000,
             action=elb_actions.AuthenticateCognitoAction(
@@ -390,19 +433,19 @@ class GenAiRetailStack(Stack):
             #     self.custom_header_name: self.custom_header_value
             # },
             origin_shield_enabled=False,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         )
 
         cloudfront_distribution = cloudfront.Distribution(
             self,
             f"{self.app_name}-cf-dist",
-            certificate=certificate,
+            certificate=self.certificate,
             domain_names=[self.config.application_dns_name],
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-                cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+                cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
             ),
             minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
