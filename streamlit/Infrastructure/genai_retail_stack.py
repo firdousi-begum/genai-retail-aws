@@ -316,7 +316,7 @@ class GenAiRetailStack(Stack):
             cluster=cluster,
             desired_count=1,
             task_definition=task_definition,
-            security_group=load_balancer_security_group,
+            security_groups=[load_balancer_security_group],
             assign_public_ip=True,
             vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets)
 
@@ -377,7 +377,7 @@ class GenAiRetailStack(Stack):
                 user_pool_client=self.user_pool_client,
                 user_pool_domain=self.user_pool_custom_domain
             ),
-            host_header=self.config.application_dns_name
+            conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
         )
 
         route53.ARecord(
