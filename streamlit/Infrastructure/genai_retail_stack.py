@@ -403,14 +403,14 @@ class GenAiRetailStack(Stack):
             default_action=elb.ListenerAction.forward([target_group])
         )
 
-        # https_listener = load_balancer.add_listener(
-        #     "HttpsSListener", 
-        #     port=443,
-        #     default_action=elb.ListenerAction.forward([target_group]),
-        #     certificates=[self.certificate]
-        # )
+        https_listener = load_balancer.add_listener(
+            "HttpsSListener", 
+            port=443,
+            default_action=elb.ListenerAction.forward([target_group]),
+            certificates=[self.certificate]
+        )
 
-        http_listener.add_action(
+        https_listener.add_action(
             "authenticate-rule",
             # priority=1000,
             action=elb_actions.AuthenticateCognitoAction(
@@ -439,7 +439,6 @@ class GenAiRetailStack(Stack):
         cloudfront_distribution = cloudfront.Distribution(
             self,
             f"{self.app_name}-cf-dist",
-            certificate=self.certificate,
             domain_names=[self.config.application_dns_name],
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origin,
