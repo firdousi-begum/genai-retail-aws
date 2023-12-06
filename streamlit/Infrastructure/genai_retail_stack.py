@@ -15,11 +15,12 @@ import aws_cdk.aws_route53_targets as targets
 import aws_cdk.aws_ssm as ssm
 import aws_cdk.aws_logs as logs
 from aws_cdk import aws_iam as iam
-from aws_cdk import core
+from aws_cdk import Stack, Duration
+from constructs import Construct
 
 import configuration as configuration
 
-class GenAiRetailStack(core.Stack):
+class GenAiRetailStack(Stack):
     """
     Provisions a Cognito User Pool with a custom domain as well as
     a VPC with an ALB in front of an ECS service based on Fargate.
@@ -36,7 +37,7 @@ class GenAiRetailStack(core.Stack):
     user_pool_user_info_url: str
     app_name: str
 
-    def __init__(self, scope: core.Construct, id: str,
+    def __init__(self, scope: Construct, id: str,
                  config: configuration.Config,  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
@@ -318,7 +319,7 @@ class GenAiRetailStack(core.Stack):
             security_group=load_balancer_security_group,
             assign_public_ip=True,
             vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets)
-            
+
         )
 
         # Setup AutoScaling policy
@@ -328,8 +329,8 @@ class GenAiRetailStack(core.Stack):
         scaling.scale_on_cpu_utilization(
             "CpuScaling",
             target_utilization_percent=80,
-            scale_in_cooldown=core.Duration.seconds(60),
-            scale_out_cooldown=core.Duration.seconds(60),
+            scale_in_cooldown=Duration.seconds(60),
+            scale_out_cooldown=Duration.seconds(60),
         )
 
         # Elastic Load Balancer

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Entrypoint to the cognito alb fargate demo CDK app"""
 import os
-from aws_cdk import core
+import aws_cdk as core
 
 from genai_retail_stack import GenAiRetailStack
 from configuration import get_config
