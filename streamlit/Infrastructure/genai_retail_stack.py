@@ -396,6 +396,8 @@ class GenAiRetailStack(Stack):
         cloudfront_distribution = cloudfront.Distribution(
             self,
             f"{self.app_name}-cf-dist",
+            certificate=certificate,
+            domain_names=[self.config.application_dns_name],
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -403,7 +405,7 @@ class GenAiRetailStack(Stack):
                 cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
             ),
-            minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+            minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
         )
 
         route53.ARecord(
