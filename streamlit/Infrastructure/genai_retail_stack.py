@@ -403,28 +403,28 @@ class GenAiRetailStack(Stack):
             default_action=elb.ListenerAction.forward([target_group])
         )
 
-        https_listener = load_balancer.add_listener(
-            "HttpsSListener", 
-            port=443,
-            default_action=elb.ListenerAction.forward([target_group]),
-            certificates=[self.certificate]
-        )
+        # https_listener = load_balancer.add_listener(
+        #     "HttpsSListener", 
+        #     port=443,
+        #     default_action=elb.ListenerAction.forward([target_group]),
+        #     certificates=[self.certificate]
+        # )
 
-        https_listener.add_action(
-            "authenticate-rule",
-            # priority=1000,
-            action=elb_actions.AuthenticateCognitoAction(
-                next=elb.ListenerAction.forward(
-                    target_groups=[
-                        target_group
-                    ]
-                ),
-                user_pool=self.user_pool,
-                user_pool_client=self.user_pool_client,
-                user_pool_domain=self.user_pool_custom_domain
-            ),
-            # conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
-        )
+        # https_listener.add_action(
+        #     "authenticate-rule",
+        #     # priority=1000,
+        #     action=elb_actions.AuthenticateCognitoAction(
+        #         next=elb.ListenerAction.forward(
+        #             target_groups=[
+        #                 target_group
+        #             ]
+        #         ),
+        #         user_pool=self.user_pool,
+        #         user_pool_client=self.user_pool_client,
+        #         user_pool_domain=self.user_pool_custom_domain
+        #     ),
+        #     # conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
+        # )
 
         # Add ALB as CloudFront Origin
         origin = LoadBalancerV2Origin(
