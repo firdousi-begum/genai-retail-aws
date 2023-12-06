@@ -391,7 +391,7 @@ class GenAiRetailStack(Stack):
         load_balancer = elb.ApplicationLoadBalancer(
             self,
             "LoadBalancer",
-            load_balancer_name=f"{self.app_name}-alb",
+            # load_balancer_name=f"{self.app_name}-alb",
             vpc=vpc,
             internet_facing=True,
             security_group=load_balancer_security_group
