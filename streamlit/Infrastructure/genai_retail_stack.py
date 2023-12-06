@@ -197,13 +197,13 @@ class GenAiRetailStack(Stack):
             zone_name=self.config.hosted_zone_name
         )
 
-        # # Create a Certificate for the ALB
-        # certificate = acm.Certificate(
-        #     self,
-        #     f"{self.app_name}-certificate",
-        #     domain_name=self.config.application_dns_name,
-        #     validation=acm.CertificateValidation.from_dns(hosted_zone)
-        # )
+        # Create a Certificate for the ALB
+        certificate = acm.Certificate(
+            self,
+            f"{self.app_name}-certificate",
+            domain_name=self.config.application_dns_name,
+            validation=acm.CertificateValidation.from_dns(hosted_zone)
+        )
 
         # Execution Role
         execution_role = iam.Role(
@@ -403,28 +403,28 @@ class GenAiRetailStack(Stack):
             default_action=elb.ListenerAction.forward([target_group])
         )
 
-        # https_listener = load_balancer.add_listener(
-        #     "HttpsSListener", 
-        #     port=443,
-        #     default_action=elb.ListenerAction.forward([target_group]),
-        #     certificates=[self.certificate]
-        # )
+        https_listener = load_balancer.add_listener(
+            "HttpsSListener", 
+            port=443,
+            default_action=elb.ListenerAction.forward([target_group]),
+            certificates=[certificate]
+        )
 
-        # https_listener.add_action(
-        #     "authenticate-rule",
-        #     # priority=1000,
-        #     action=elb_actions.AuthenticateCognitoAction(
-        #         next=elb.ListenerAction.forward(
-        #             target_groups=[
-        #                 target_group
-        #             ]
-        #         ),
-        #         user_pool=self.user_pool,
-        #         user_pool_client=self.user_pool_client,
-        #         user_pool_domain=self.user_pool_custom_domain
-        #     ),
-        #     # conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
-        # )
+        https_listener.add_action(
+            "authenticate-rule",
+            # priority=1000,
+            action=elb_actions.AuthenticateCognitoAction(
+                next=elb.ListenerAction.forward(
+                    target_groups=[
+                        target_group
+                    ]
+                ),
+                user_pool=self.user_pool,
+                user_pool_client=self.user_pool_client,
+                user_pool_domain=self.user_pool_custom_domain
+            ),
+            # conditions=[elb.ListenerCondition.host_headers([self.config.application_dns_name])]
+        )
 
         # Add ALB as CloudFront Origin
         origin = LoadBalancerV2Origin(
@@ -433,7 +433,7 @@ class GenAiRetailStack(Stack):
             #     self.custom_header_name: self.custom_header_value
             # },
             origin_shield_enabled=False,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
         )
 
         cloudfront_distribution = cloudfront.Distribution(
