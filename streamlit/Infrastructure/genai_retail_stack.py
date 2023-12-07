@@ -84,8 +84,7 @@ class GenAiRetailStack(Stack):
 
         self.config = config
         self.app_name = self.config.app_name
-        self.cert_arn = "arn:aws:acm:us-east-1:447598836120:certificate/29ae2ecc-fb35-488c-93b1-c274af961490"
-
+        
         self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
         self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
         
@@ -396,11 +395,11 @@ class GenAiRetailStack(Stack):
             security_group=load_balancer_security_group
         )
 
-        http_listener = load_balancer.add_listener(
-            "Listener", 
-            port=80,
-            default_action=elb.ListenerAction.forward([target_group])
-        )
+        # http_listener = load_balancer.add_listener(
+        #     "Listener", 
+        #     port=80,
+        #     default_action=elb.ListenerAction.forward([target_group])
+        # )
 
         https_listener = load_balancer.add_listener(
             "HttpsSListener", 
@@ -423,38 +422,38 @@ class GenAiRetailStack(Stack):
             )
         )
 
-        # Add ALB as CloudFront Origin
-        origin = LoadBalancerV2Origin(
-            load_balancer,
-            origin_shield_enabled=False,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY
-        )
+        # # Add ALB as CloudFront Origin
+        # origin = LoadBalancerV2Origin(
+        #     load_balancer,
+        #     origin_shield_enabled=False,
+        #     protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY
+        # )
 
-        cf_cert = acm.Certificate.from_certificate_arn(
-            self,
-            f"{self.app_name}-cf-cert",
-            certificate_arn=self.cert_arn
-        )
+        # cf_cert = acm.Certificate.from_certificate_arn(
+        #     self,
+        #     f"{self.app_name}-cf-cert",
+        #     certificate_arn=self.cert_arn
+        # )
 
-        cloudfront_distribution = cloudfront.Distribution(
-            self,
-            f"{self.app_name}-cf-dist",
-            domain_names=[self.config.application_dns_name],
-            certificate=cf_cert,
-            default_behavior=cloudfront.BehaviorOptions(
-                origin=origin,
-                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-                cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-                origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
-            ),
-            minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
-        )
+        # cloudfront_distribution = cloudfront.Distribution(
+        #     self,
+        #     f"{self.app_name}-cf-dist",
+        #     domain_names=[self.config.application_dns_name],
+        #     certificate=cf_cert,
+        #     default_behavior=cloudfront.BehaviorOptions(
+        #         origin=origin,
+        #         viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        #         allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
+        #         cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+        #         origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
+        #     ),
+        #     minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
+        # )
 
         route53.ARecord(
             self, 
             "AliasRecord",
             zone=hosted_zone,
-            target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(cloudfront_distribution)),
+            target=route53.RecordTarget.from_alias(targets.LoadBalancerTarget(load_balancer)),
             record_name=self.config.application_dns_name
         )
