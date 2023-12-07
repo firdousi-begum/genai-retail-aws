@@ -396,11 +396,11 @@ class GenAiRetailStack(Stack):
             security_group=load_balancer_security_group
         )
 
-        # http_listener = load_balancer.add_listener(
-        #     "Listener", 
-        #     port=80,
-        #     default_action=elb.ListenerAction.forward([target_group])
-        # )
+        http_listener = load_balancer.add_listener(
+            "Listener", 
+            port=80,
+            default_action=elb.ListenerAction.forward([target_group])
+        )
 
         https_listener = load_balancer.add_listener(
             "HttpsSListener", 
@@ -427,7 +427,7 @@ class GenAiRetailStack(Stack):
         origin = LoadBalancerV2Origin(
             load_balancer,
             origin_shield_enabled=False,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY
         )
 
         cf_cert = acm.Certificate.from_certificate_arn(
@@ -445,7 +445,7 @@ class GenAiRetailStack(Stack):
                 origin=origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-                cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
             ),
             minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
