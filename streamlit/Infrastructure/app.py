@@ -12,19 +12,10 @@ region = os.environ.get('CDK_DEFAULT_REGION')
 
 # Create an environment object with the specified account and region
 env = core.Environment(account=account, region=region)
-env_us = core.Environment(account=account, region="us-east-1")
 
 def main():
     """Wrapper for the CDK app"""
     app = core.App()
-
-    # cert_stack = CertificateStack(
-    #     app,
-    #     "genai-retail-cert",
-    #     config=get_config(),
-    #     env=env_us,
-    #     cross_region_references=True
-    # )
 
     GenAiRetailStack(
         app,

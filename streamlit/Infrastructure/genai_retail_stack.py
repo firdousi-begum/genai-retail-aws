@@ -14,52 +14,11 @@ import aws_cdk.aws_route53 as route53
 import aws_cdk.aws_route53_targets as targets
 import aws_cdk.aws_ssm as ssm
 import aws_cdk.aws_logs as logs
-from aws_cdk import aws_cloudfront as cloudfront
-from aws_cdk.aws_cloudfront_origins import LoadBalancerV2Origin
 from aws_cdk import aws_iam as iam
-from aws_cdk import Stack, Duration, CfnOutput
+from aws_cdk import Stack, Duration
 from constructs import Construct
 
 import configuration as configuration
-
-# class CertificateStack(Stack):
-#     """
-#     Provision ACM Certificate in us-east-1 region.
-#     It is required for cloud front distribution
-#     """
-
-#     config: configuration.Config
-
-#     def __init__(self, scope: Construct, id: str,
-#                 config: configuration.Config,  **kwargs) -> None:
-#         super().__init__(scope, id, **kwargs)
-
-#         self.config = config
-#         self.app_name = self.config.app_name
-
-#         # Load the hosted zone
-#         hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
-#             self,
-#             "hosted-zone",
-#             hosted_zone_id=self.config.hosted_zone_id,
-#             zone_name=self.config.hosted_zone_name
-#         )
-
-#         # Create a Certificate for the Cloudfront
-#         certificate = acm.Certificate(
-#             self,
-#             f"{self.app_name}-cert",
-#             domain_name=self.config.application_dns_name,
-#             validation=acm.CertificateValidation.from_dns(hosted_zone)
-#         )
-
-#         # We assign the cert to a local variable for the Object.
-#         self._certificate = certificate
-
-#     # Using the property decorator
-#     @property
-#     def main_cert(self) -> acm.Certificate:
-#         return self._certificate
 
 class GenAiRetailStack(Stack):
     """
@@ -421,34 +380,6 @@ class GenAiRetailStack(Stack):
                 user_pool_domain=self.user_pool_custom_domain
             )
         )
-
-        # # Add ALB as CloudFront Origin
-        # origin = LoadBalancerV2Origin(
-        #     load_balancer,
-        #     origin_shield_enabled=False,
-        #     protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY
-        # )
-
-        # cf_cert = acm.Certificate.from_certificate_arn(
-        #     self,
-        #     f"{self.app_name}-cf-cert",
-        #     certificate_arn=self.cert_arn
-        # )
-
-        # cloudfront_distribution = cloudfront.Distribution(
-        #     self,
-        #     f"{self.app_name}-cf-dist",
-        #     domain_names=[self.config.application_dns_name],
-        #     certificate=cf_cert,
-        #     default_behavior=cloudfront.BehaviorOptions(
-        #         origin=origin,
-        #         viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        #         allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-        #         cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-        #         origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
-        #     ),
-        #     minimum_protocol_version=cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
-        # )
 
         route53.ARecord(
             self, 
