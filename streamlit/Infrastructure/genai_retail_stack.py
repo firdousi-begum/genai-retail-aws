@@ -195,12 +195,6 @@ class GenAiRetailStack(Stack):
             zone_name=self.config.hosted_zone_name
         )
 
-        # cf_cert = acm.Certificate.from_certificate_arn(
-        #     self,
-        #     f"{self.app_name}-cf-cert",
-        #     certificate_arn=self.cert_arn
-        # )
-
         # Create a Certificate for the ALB
         lb_cert = acm.Certificate(
             self,
@@ -436,11 +430,17 @@ class GenAiRetailStack(Stack):
             protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
         )
 
+        cf_cert = acm.Certificate.from_certificate_arn(
+            self,
+            f"{self.app_name}-cf-cert",
+            certificate_arn=self.cert_arn
+        )
+
         cloudfront_distribution = cloudfront.Distribution(
             self,
             f"{self.app_name}-cf-dist",
-            # domain_names=[self.config.application_dns_name],
-            # certificate=cf_cert,
+            domain_names=[self.config.application_dns_name],
+            certificate=cf_cert,
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
