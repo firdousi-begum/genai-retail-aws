@@ -1,15 +1,16 @@
 import streamlit as st
-from utils.studio_style import apply_studio_style
+from utils.studio_style import apply_studio_style, get_background
 from utils.studio_style import keyword_label
-from utils import bedrock, config
+from utils import bedrock, api
 import logging
+from utils.products import industry, description_prompt
 
 st.set_page_config(
     page_title="Generate Product Descriptions",
     page_icon="🛒",
 )
 
-config.get_background()
+get_background()
 
 def generate_description(product_name, product_features, persona = None):
     
@@ -41,17 +42,37 @@ def generate_description(product_name, product_features, persona = None):
                         }
     
     description = st.session_state.pd_assistant.get_text(prompt_data, modelId, inference_config)
+    #description = st.session_state.api.get_text(prompt_data)
     return description
 
 def load_demo():
-    
-   
+
     st.markdown(" #### Generate Description")
     # Create input elements
-    product_name = st.text_input("Enter the name of the Product:", value="Sunglasses")
-    example_features = "- Polarized lenses for enhanced clarity\n- Stylish and lightweight design\n- UV protection for eye safety\n- Adjustable nose pads for a comfortable fit\n- Comes with a protective case and cleaning cloth"
-    product_features = st.text_area("Describe the features of the product:", value=example_features,  height=150)
+    # product_name = st.text_input("Enter the name of the Product:", value="Sunglasses")
+    # example_features = "- Polarized lenses for enhanced clarity\n- Stylish and lightweight design\n- UV protection for eye safety\n- Adjustable nose pads for a comfortable fit\n- Comes with a protective case and cleaning cloth"
+    # product_features = st.text_area("Describe the features of the product:", value=example_features,  height=150)
 
+    st.sidebar.header("Products")
+    selected_industry = st.sidebar.selectbox("Select Industry", list(description_prompt.keys()))
+    # Check if the selected industry is present in the dictionary
+   
+    products = [product["Product Name"] for product in description_prompt[selected_industry]]
+    selected_product = st.sidebar.selectbox("Select Product", products)
+
+    # Check if the selected product is present in the list
+    product_info = next(
+        (product for product in description_prompt[selected_industry] if product["Product Name"] == selected_product),
+        None,
+    )
+
+    # Create input elements
+    product_name = st.text_input("Enter the name of the Product:", value=product_info["Product Name"])
+    product_features = st.text_area(
+        "Describe the features of the product:", value=product_info["Features"], height=150
+    )
+          
+   
     # Show persona dropdown and "Personalize Description" button
     personas = {
         "None": "",
@@ -138,7 +159,7 @@ if __name__ == "__main__":
     st.write(' '.join(formatted_labels), unsafe_allow_html=True)
     apply_studio_style()
 
-       # Add a description for this specific use case
+    # Add a description for this specific use case
     st.markdown(
         '''
         #### Use case:
@@ -150,12 +171,16 @@ if __name__ == "__main__":
         4. **Generate Description**: Obtain professionally written description with at least two of mentioned features.
 
         ''')  
+
     
     if "logger" not in st.session_state:
         st.session_state.logger = configure_logging()
     
     if "pd_assistant" not in st.session_state:
         st.session_state.pd_assistant = bedrock.BedrockAssistant(modelId, st.session_state.logger)
+    
+    if "api" not in st.session_state:
+        st.session_state.api = api.GenAIRetailAPI(st.session_state.logger)
     main()
 
 

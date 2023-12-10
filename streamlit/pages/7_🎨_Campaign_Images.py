@@ -8,13 +8,13 @@ import io
 import logging
 from typing import Union
 from utils import config, products
-from utils.studio_style import keyword_label,  apply_studio_style
+from utils.studio_style import keyword_label,  apply_studio_style, get_background
 from stability_sdk.api import GenerationRequest, GenerationResponse, TextPrompt, InitImageMode, GuidancePreset, Sampler, MaskSource
 
 
 # Page configuration
 st.set_page_config(page_title="Generate Images - Stability.AI", page_icon="🎨")
-config.get_background()
+get_background()
 
 endpointName ='sdxl-jumpstart-1-2023-08-30-23-25-11-865'
 

@@ -419,6 +419,12 @@ prompts_data_idea = {
             "Prompt": "Design an image of a powerful, midnight-black truck navigating snow-covered roads in Sweden. Illuminate the truck's safety features, advanced technology, and reliability during harsh winter conditions."
         },
     ],
+    "Financial Services": [
+         {
+            "Prompt Title": "QuantumSafe CryptoVault",
+            "Prompt": "Cutting-edge financial product, the QuantumSafe CryptoVault. Showcase its revolutionary quantum-resistant encryption technology, ensuring the highest level of security for digital assets. Emphasize the product's role in safeguarding cryptocurrencies and sensitive financial information against emerging threats. Capture the essence of innovation, security, and the future of financial protection."
+        },
+    ],
 }
 adapter_data = {
     "Retail": [
@@ -428,4 +434,34 @@ adapter_data = {
             "Prompt": "White silk shirt dress, with black stitch, realistic, 4k photo, highly detailed. It should showcase fine stitching details and a sleek, modern design."
         },
     ],
+}
+
+industry =[
+    "Retail",
+    "Financial Services",
+    "Transport"
+]
+
+description_prompt = {
+    "Retail": [
+        {
+            "Product Name": "Sunglasses",
+            "Features": '''- Polarized lenses for enhanced clarity
+- Stylish and lightweight design
+- UV protection for eye safety
+- Adjustable nose pads for a comfortable fit
+- Comes with a protective case and cleaning cloth'''
+    }
+    ],
+    "Financial Services": [
+        {
+            "Product Name": "WealthBuilder Credit Card",
+            "Features": '''- Cashback Rewards: Earn cashback on every purchase, putting money back into your pocket with every transaction.
+- Financial Planning Tools: Access exclusive financial planning tools to help you achieve your short and long-term financial goals.
+- Travel Benefits: Enjoy complimentary travel insurance, airport lounge access, and special discounts on travel bookings.
+- Security and Control: Benefit from advanced security features, including real-time transaction alerts and the ability to freeze/unfreeze your card instantly.
+- Contactless Payments: Experience the convenience of contactless payments for a faster and more secure checkout process.
+            '''
+        }
+    ]
 }

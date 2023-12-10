@@ -12,7 +12,7 @@ from stability_sdk.api import GenerationRequest, GenerationResponse, TextPrompt
 from PIL import Image
 from typing import Union
 from utils.products import prompts_data_idea, adapter_data
-from utils.studio_style import apply_studio_style
+from utils.studio_style import apply_studio_style, get_background
 from utils.studio_style import keyword_label
 from utils import config
 import io
@@ -21,7 +21,7 @@ import logging
 # End SDXL imports
 
 st.set_page_config(page_title="Product Ideator", page_icon="high_brightness")
-config.get_background()
+get_background()
 
 if "st1_assistant" not in st.session_state:
     st.session_state.st1_assistant = None
@@ -58,7 +58,7 @@ models = {
     ]
 }
 
-negative_prompt = "ugly, tiling, poorly drawn hands, out of frame, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low quality, bad art, beginner, windy, amateur, distorted"
+negative_prompt = "text, ugly, tiling, poorly drawn hands, out of frame, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low quality, bad art, beginner, windy, amateur, distorted"
 
 
 def encode_image(image_path: str, resize: bool = True, thumbnail : bool = True) -> Union[str, None]:
@@ -367,7 +367,7 @@ def load_sidebar():
     industry = ''
     industry = prompts.selectbox(
         'Select an industry',
-        ('Retail', 'Fashion', 'Manufacturing', 'Technology', 'Transport'), key='industry')
+       list(prompts_data_idea.keys()), key='industry')
     if st.session_state.generation_type == "TEXT_IMAGE":
         st.write("**Instructions:** \n - Type a product idea prompt \n - You will see an image, a product description, and press release generated for your product idea")
 
