@@ -1,6 +1,7 @@
 # utils/studio_style.py
 import base64
 import streamlit as st
+import base64
 
 def keyword_label(text):
     if 'Model' in text:

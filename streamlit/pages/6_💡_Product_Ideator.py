@@ -14,7 +14,7 @@ from typing import Union
 from utils.products import prompts_data_idea, adapter_data
 from utils.studio_style import apply_studio_style, get_background
 from utils.studio_style import keyword_label
-from utils import config
+from utils import studio_style
 import io
 import base64
 import logging

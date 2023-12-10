@@ -43,7 +43,7 @@ class GenAiRetailStack(Stack):
 
         self.config = config
         self.app_name = self.config.app_name
-
+        
         self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
         self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
         
@@ -154,9 +154,10 @@ class GenAiRetailStack(Stack):
         )
 
         # Create a Certificate for the ALB
-        certificate = acm.Certificate(
+        lb_cert = acm.Certificate(
             self,
             f"{self.app_name}-certificate",
+            certificate_name=f"{self.app_name}-certificate",
             domain_name=self.config.application_dns_name,
             validation=acm.CertificateValidation.from_dns(hosted_zone)
         )
@@ -303,6 +304,7 @@ class GenAiRetailStack(Stack):
             vpc=vpc,
             description="Security group for the ECS service"
         )
+
         ecs_security_group.add_ingress_rule(
             load_balancer_security_group,
             ec2.Port.tcp(8501),
@@ -316,7 +318,7 @@ class GenAiRetailStack(Stack):
             cluster=cluster,
             desired_count=1,
             task_definition=task_definition,
-            security_group=load_balancer_security_group,
+            security_groups=[load_balancer_security_group],
             assign_public_ip=True,
             vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets)
 
@@ -346,27 +348,27 @@ class GenAiRetailStack(Stack):
         load_balancer = elb.ApplicationLoadBalancer(
             self,
             "LoadBalancer",
+            load_balancer_name=f"{self.app_name}-fargate-lb",
             vpc=vpc,
             internet_facing=True,
             security_group=load_balancer_security_group
         )
 
-        load_balancer.add_listener(
-            "Listener", 
-            port=80,
-            default_action=elb.ListenerAction.forward([target_group])
-        )
+        # http_listener = load_balancer.add_listener(
+        #     "Listener", 
+        #     port=80,
+        #     default_action=elb.ListenerAction.forward([target_group])
+        # )
 
         https_listener = load_balancer.add_listener(
             "HttpsSListener", 
             port=443,
             default_action=elb.ListenerAction.forward([target_group]),
-            certificates=[certificate]
+            certificates=[lb_cert]
         )
 
         https_listener.add_action(
             "authenticate-rule",
-            priority=1000,
             action=elb_actions.AuthenticateCognitoAction(
                 next=elb.ListenerAction.forward(
                     target_groups=[
@@ -376,8 +378,7 @@ class GenAiRetailStack(Stack):
                 user_pool=self.user_pool,
                 user_pool_client=self.user_pool_client,
                 user_pool_domain=self.user_pool_custom_domain
-            ),
-            host_header=self.config.application_dns_name
+            )
         )
 
         route53.ARecord(
