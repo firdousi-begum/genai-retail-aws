@@ -3,13 +3,13 @@
     {
       "name": "api_handler_role",
       "resource_type": "iam_role",
-      "role_arn": "arn:aws:iam::447598836120:role/retail-genai-dev-api_handler",
-      "role_name": "retail-genai-dev-api_handler"
+      "role_arn": "arn:aws:iam::447598836120:role/awsgenai-mongodb-dev-api_handler",
+      "role_name": "awsgenai-mongodb-dev-api_handler"
     },
     {
       "name": "api_handler",
       "resource_type": "lambda_function",
-      "lambda_arn": "arn:aws:lambda:eu-west-1:447598836120:function:retail-genai-dev"
+      "lambda_arn": "arn:aws:lambda:eu-west-1:447598836120:function:awsgenai-mongodb-dev"
     },
     {
       "name": "rest_api",

@@ -2,11 +2,11 @@
 """
 
 from .titan import TitanLarge
-from .claude import ClaudeInstantV1, ClaudeV1, ClaudeV2
+from .claude import ClaudeInstantV1, ClaudeV1, ClaudeV2, ClaudeV21
 from .ai21 import AI21Mid, AI21Ultra
 from .cohere import CommandText
 from .titan_embeddings import TitanTextEmbeddings, TitanTextEmbeddingsV2
-from .bedrock import StreamDetails, CompletionDetails, BedrockFoundationModel
+from .bedrock import StreamDetails, CompletionDetails, BedrockFoundationModel, BedrockService
 from .exceptions import BedrockInvalidModelError
 
 __all__ =[
@@ -16,11 +16,13 @@ __all__ =[
     "ClaudeInstantV1",
     "ClaudeV1",
     "ClaudeV2",
+    "ClaudeV21",
     "AI21Mid", 
     "AI21Ultra",
     "StreamDetails",
     "CompletionDetails",
     "BedrockFoundationModel",
+    "BedrockService",
     "CommandText",
     "from_model_id"
 ]
@@ -30,6 +32,7 @@ __model_map = {
     ClaudeInstantV1.model_id: ClaudeInstantV1,
     ClaudeV1.model_id: ClaudeV1,
     ClaudeV2.model_id: ClaudeV2,
+    ClaudeV21.model_id: ClaudeV21,
     CommandText.model_id: CommandText,
     AI21Mid.model_id: AI21Mid,
     AI21Ultra.model_id: AI21Ultra,
