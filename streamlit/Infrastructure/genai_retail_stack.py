@@ -276,6 +276,14 @@ class GenAiRetailStack(Stack):
                         parameter_name=f"{self.bedrock_key_path}region",
                         version=1
                     )
+                ),
+                "API_URL": ecs.Secret.from_ssm_parameter(
+                    ssm.StringParameter.from_secure_string_parameter_attributes(
+                        self, 
+                        "BrApiUrl",
+                        parameter_name=f"{self.bedrock_key_path}api_url",
+                        version=1
+                    )
                 )
             }            
         )

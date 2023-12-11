@@ -41,8 +41,8 @@ def generate_description(product_name, product_features, persona = None):
                         "stop_sequences":[]
                         }
     
-    description = st.session_state.pd_assistant.get_text(prompt_data, modelId, inference_config)
-    #description = st.session_state.api.get_text(prompt_data)
+    #description = st.session_state.pd_assistant.get_text(prompt_data, modelId, inference_config)
+    description = st.session_state.api.get_text(prompt_data)
     return description
 
 def load_demo():
