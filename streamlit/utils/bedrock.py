@@ -79,9 +79,11 @@ class BedrockAssistant():
 
         print(f"Create new client\n  Using region: {target_region}")
         if aws_access_key_id == '' or aws_secret_access_key == '':
-            session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
+            #session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
+            session_kwargs = {"region_name": target_region}
         else:
-            session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
+            #session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
+            session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key}
         client_kwargs = {**session_kwargs}
 
 

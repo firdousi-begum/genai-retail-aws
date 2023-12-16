@@ -3,7 +3,7 @@ from langchain import PromptTemplate
 from utils.studio_style import apply_studio_style, get_background
 from utils.studio_style import keyword_label, sentiment_label
 from utils import langchain
-from utils import bedrock
+from utils import bedrock, api
 from utils import studio_style
 from datetime import datetime
 import pandas as pd
@@ -120,6 +120,7 @@ def generate_review_summary (product_reviews, product_name):
                         }
     #print(f'Reviews:{product_reviews}')
     summary = langchain.summarize_long_text(product_reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, map_prompt, combine_prompt)
+    summary = st.session_state.api.get_text("")
     display_product_review_summary(summary)
     return summary
 
@@ -271,4 +272,7 @@ if __name__ == "__main__":
     
     if "sm_assistant" not in st.session_state:
         st.session_state.sm_assistant = bedrock.BedrockAssistant(modelId, st.session_state.logger)
+
+    if "api" not in st.session_state:
+        st.session_state.api = api.GenAIRetailAPI(st.session_state.logger)
     main()
