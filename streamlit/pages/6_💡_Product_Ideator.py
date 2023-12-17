@@ -161,8 +161,8 @@ def parse_im_response(query_im_response):
     return response_dict['generated_images'], response_dict['prompt']
 
 
-def call_bedrock_titan(prompt_text, max_token_count=1024, temperature=1, top_p=1, stop_sequences=[]):
-    model_id = "amazon.titan-tg1-large"
+def call_bedrock_titan(prompt_text, max_token_count=1024, temperature=0.5, top_p=1, stop_sequences=[]):
+    model_id = "amazon.titan-text-express-v1"
     st.session_state.text_model_id =model_id
 
     body_string = "{\"inputText\":\"" + f"{prompt_text}" +\
@@ -191,9 +191,22 @@ def call_bedrock_claude_2(prompt_text, max_tokens_to_sample=1024, temperature=1,
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
 
+def call_bedrock_claude_instant(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
+    model_id = "anthropic.claude-instant-v1"
+    st.session_state.text_model_id = model_id
+
+    body = {
+        "prompt": "Human:"+prompt_text+"\n\nAssistant:",
+        "max_tokens_to_sample": max_tokens_to_sample
+    }
+    body_string = json.dumps(body)
+    body = bytes(body_string, 'utf-8')
+
+    result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+
 def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
     model_id = "anthropic.claude-v1"
-    print('hello CLAUDE 1')
+    #print('hello CLAUDE 1')
     st.session_state.text_model_id = model_id
 
     body = {
@@ -207,7 +220,7 @@ def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1,
 
 def call_bedrock_claude_2_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
     model_id = "anthropic.claude-v2:1"
-    print('hello CLAUDE 2.1')
+    #print('hello CLAUDE 2.1')
     st.session_state.text_model_id = model_id
 
     body = {
@@ -266,7 +279,7 @@ def call_bedrock_jurassic(prompt_text, max_token_count=1024, temperature=1, top_
 text_models = {
     "bedrock titan" : call_bedrock_titan,
     "bedrock claude 2" : call_bedrock_claude_2,
-    "bedrock claude instant 1" : call_bedrock_claude_2,
+    "bedrock claude instant 1" : call_bedrock_claude_instant,
     "bedrock claude 2.1" : call_bedrock_claude_2_1,
     "bedrock claude" : call_bedrock_claude_1,
     "bedrock jurassic-2" : call_bedrock_jurassic
@@ -312,6 +325,7 @@ def GetAnswers(query, industry):
         prompt_text = 'Create a product description in '+st.session_state.language+' in 200 words for '+ query.strip("query:")
         func = text_models[st.session_state.text_model.lower()]
         answer = func(prompt_text)
+        #print(f'answer: {answer}')
         answer = answer.replace("$","\$")   
         return answer    
 
@@ -343,6 +357,13 @@ def getAgent():
     b_assistant = bedrock.BedrockAssistant(modelId,st.session_state.logger)
     return assistant, b_assistant
 
+def load_keywords():
+    keywords = [f'Model: {st.session_state.modelId}, {st.session_state.text_model}',f'{st.session_state.mode}']
+    formatted_labels = [keyword_label(keyword) for keyword in keywords]
+    st.write(' '.join(formatted_labels), unsafe_allow_html=True)
+    apply_studio_style()       
+  
+
 def load_sidebar():
     prompts.header("Product ideator")
     selected_generation_type = prompts.selectbox("Select Generation Type", generation_types, key="generation_type" )
@@ -357,11 +378,6 @@ def load_sidebar():
     modelIds = [item for item in models[mode_type]]
     model = prompts.selectbox("Select Image Model", modelIds, index =model_index, key="modelId")
 
-    keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
-    formatted_labels = [keyword_label(keyword) for keyword in keywords]
-    st.write(' '.join(formatted_labels), unsafe_allow_html=True)
-    apply_studio_style()
-
     prompts.markdown("### Make your pick")
     idea = ''
     industry = ''
@@ -369,7 +385,6 @@ def load_sidebar():
         'Select an industry',
        list(prompts_data_idea.keys()), key='industry')
     if st.session_state.generation_type == "TEXT_IMAGE":
-        st.write("**Instructions:** \n - Type a product idea prompt \n - You will see an image, a product description, and press release generated for your product idea")
 
         product_idea =''
         if industry and industry != "NONE":
@@ -377,11 +392,15 @@ def load_sidebar():
             product_idea = prompts.selectbox("Select an example Product", prompt_titles, key="prompt_title")
 
 
-        fms = ['Bedrock Claude Instant 1','Bedrock Claude 2.1','Bedrock Claude','Bedrock Claude 2','Bedrock Jurassic-2']
-        default_model = fms.index('Bedrock Claude 2.1')
+        fms = ['Bedrock Titan','Bedrock Claude Instant 1','Bedrock Claude 2.1','Bedrock Claude','Bedrock Claude 2','Bedrock Jurassic-2']
+        default_model = fms.index('Bedrock Titan')
         text_model = prompts.selectbox(
             'Select a Text FM',
             options=fms, index=default_model, key="text_model")
+        
+        load_keywords()
+
+        st.write("**Instructions:** \n - Type a product idea prompt \n - You will see an image, a product description, and press release generated for your product idea")
         
         for prompt in prompts_data_idea[industry]:
             if prompt["Prompt Title"] == product_idea:
@@ -424,8 +443,6 @@ def load_sidebar():
 
         input_text = st.text_area('**What is your product idea?**', key='prod_text', value=idea)
 
-
-
     
 def main():
     # Streamlit app layout
@@ -433,12 +450,10 @@ def main():
     st.markdown("# Take your product idea to the next level")
 
     load_sidebar()
-                    
-  
+
     if st.session_state.st1_assistant is None or st.session_state.bedrock_assistant is None:
         st.session_state.st1_assistant, st.session_state.bedrock_assistant = getAgent()
 
-  
 
     # Generate button
     if st.button("Ideate"):
@@ -446,7 +461,7 @@ def main():
         if st.session_state.prod_text != '' and st.session_state.generation_type == "TEXT_IMAGE":
             with st.spinner("Generating Product Idea..."):
                 result = GetAnswers(st.session_state.prod_text, st.session_state.industry)
-
+            #print(f'description: {result}')  
             result = result.replace("$","\$")
             tab1, tab2, tab3, tab4 = st.tabs(["Product description", "Internal memo", "Press release", "Social Media Ad"])
             #c1, c2 = st.columns(2)
@@ -458,6 +473,7 @@ def main():
                 prompt_text = 'Generate an internal memo announcing the launch decision in '+st.session_state.language+' for '+ st.session_state.prod_text.strip("query:")
                 func = text_models[st.session_state.text_model.lower()]
                 answer = func(prompt_text)
+                #print(f'memo: {result}')  
                 answer = answer.replace("$","\$") 
                 st.write(answer)
             with tab3:

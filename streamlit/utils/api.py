@@ -38,7 +38,7 @@ class GenAIRetailAPI():
     
     def summarize_text(self, prompt, **args):
         payload = {
-            "prompt": prompt,
+            "text": prompt,
             **args
         }
         

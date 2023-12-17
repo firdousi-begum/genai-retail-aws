@@ -17,7 +17,7 @@ def sentiment_label(sentiment, text):
         return f'<div class="sentiment-label-positive">{text}</div>'
     elif sentiment_lower == "negative":
         return f'<div class="sentiment-label-negative">{text}</div>'
-    elif sentiment_lower == "mixed" or sentiment_lower == "neutral":
+    elif sentiment_lower == "mixed" or sentiment_lower == "neutral" or 'slightly' in sentiment_lower:
         return f'<div class="sentiment-label-mixed">{text}</div>'
     else:
         return f'<div class="sentiment-label-positive">{text}</div>'  # Default color if sentiment is not recognized

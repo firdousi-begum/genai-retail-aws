@@ -343,15 +343,13 @@ class BedrockAssistant():
         response = self.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
         response_body = json.loads(response.get('body').read())
         #print(f'Claude response: {response_body}')
-
+        
         if "claude" in modelId:
             outputText = response_body['completion']
-        elif modelId == "ai21.j2-jumbo-instruct":
-            # response_lines = response['body'].readlines()
-            # json_str = response_lines[0].decode('utf-8')
-            # json_obj = json.loads(json_str)
-            # outputText = json_obj['completions'][0]['data']['text']
+        elif "ai21" in modelId:
             outputText = response_body['completions'][0]['data']['text']
+        elif "meta" in modelId:
+            outputText = response_body['generation'].strip()
         else:
             outputText = response_body.get('results')[0].get('outputText')
 

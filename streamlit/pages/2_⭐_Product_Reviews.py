@@ -84,7 +84,7 @@ def generate_review_summary (product_reviews, product_name):
     Generate summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
     ```{text}```
 
-    Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the review summary, 
+    Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the generated summary, 
     and generate maximum 5 most important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
     The output should ALWAYS be valid JSON document with text inside the 'outputFormat' below, do NOT add any text in the output before JSON . 
     Don't include any preamble.
@@ -113,14 +113,14 @@ def generate_review_summary (product_reviews, product_name):
     #modelId = 'anthropic.claude-v1'
     inference_config = {
                                 "max_tokens_to_sample":4096,
-                                "temperature":1,
+                                "temperature":0.1,
                                 "top_k":250,
                                 "top_p":0.5,
                                 "stop_sequences":[]
                         }
     #print(f'Reviews:{product_reviews}')
     summary = langchain.summarize_long_text(product_reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, map_prompt, combine_prompt)
-    summary = st.session_state.api.get_text("")
+    #summary = st.session_state.api.get_text("")
     display_product_review_summary(summary)
     return summary
 
