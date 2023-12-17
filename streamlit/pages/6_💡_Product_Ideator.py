@@ -190,6 +190,7 @@ def call_bedrock_claude_2(prompt_text, max_tokens_to_sample=1024, temperature=1,
     body = bytes(body_string, 'utf-8')
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+    return result_text
 
 def call_bedrock_claude_instant(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
     model_id = "anthropic.claude-instant-v1"
@@ -203,6 +204,7 @@ def call_bedrock_claude_instant(prompt_text, max_tokens_to_sample=1024, temperat
     body = bytes(body_string, 'utf-8')
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+    return result_text
 
 def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
     model_id = "anthropic.claude-v1"
@@ -217,6 +219,7 @@ def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1,
     body = bytes(body_string, 'utf-8')
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+    return result_text
 
 def call_bedrock_claude_2_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
     model_id = "anthropic.claude-v2:1"
@@ -232,16 +235,7 @@ def call_bedrock_claude_2_1(prompt_text, max_tokens_to_sample=1024, temperature=
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
     
-   
-    # response = bedrock.invoke_model(
-    #     modelId = model_id,
-    #     contentType = "application/json",
-    #     accept = "application/json",
-    #     body = body)
-    # response_lines = response['body'].readlines()
-    # json_str = response_lines[0].decode('utf-8')
-    # json_obj = json.loads(json_str)
-    # result_text = json_obj['completion']
+
     return result_text
 
 
@@ -263,16 +257,6 @@ def call_bedrock_jurassic(prompt_text, max_token_count=1024, temperature=1, top_
     
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
     
-   
-    # response = bedrock.invoke_model(
-    #     modelId = model_id,
-    #     contentType = "application/json",
-    #     accept = "application/json",
-    #     body = body)
-    # response_lines = response['body'].readlines()
-    # json_str = response_lines[0].decode('utf-8')
-    # json_obj = json.loads(json_str)
-    # result_text = json_obj['completions'][0]['data']['text']
     return result_text
 
 

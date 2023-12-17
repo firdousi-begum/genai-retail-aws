@@ -346,12 +346,16 @@ class BedrockAssistant():
         
         if "claude" in modelId:
             outputText = response_body['completion']
+            #print(f'claude: {outputText}')
         elif "ai21" in modelId:
             outputText = response_body['completions'][0]['data']['text']
+            #print(f'ai21: {outputText}')
         elif "meta" in modelId:
             outputText = response_body['generation'].strip()
+            #print(f'meta: {outputText}')
         else:
             outputText = response_body.get('results')[0].get('outputText')
+            #print(f'titan: {outputText}')
 
         return outputText
 
