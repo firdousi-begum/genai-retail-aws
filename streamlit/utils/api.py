@@ -36,21 +36,22 @@ class GenAIRetailAPI():
             print(f"Error in API request: {e}")
             return None
     
-    def summarize_text(self, prompt, **args):
+    def summarize_reviews(self, product_name, product_reviews, **args):
         payload = {
-            "text": prompt,
+            "product_name": product_name,
+            "product_reviews": product_reviews,
             **args
         }
         
-        api = self.api_url+ "/summarize/text"
+        api = self.api_url+ "/summarize/reviews"
         print('API URL: '+ api)
         
         try:
             response = requests.post(api, headers=self.headers, data=json.dumps(payload))
             # Check the response status and content
             if response.status_code == 200:
-                result = response.json()[0]
-                print(f"API response: {result}")
+                result = response.json()
+                #print(f"API response: {result}")
                 return result
             else:
                 print(f"API request failed with status code {response.status_code}: {response.text}")

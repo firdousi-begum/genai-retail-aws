@@ -18,7 +18,7 @@ import logging
 # map_reduce summarizes each chunk, combines the summary, and summarizes the combined summary. If the combined summary is too large, it would raise error.
 # refine summarizes the first chunk, and then summarizes the second chunk with the first summary. The same process repeats until all chunks are summarized.
 
-def summarize_long_text(long_text,bedrock_client, modelId = 'amazon.titan-tg1-large', generationConfig = None, map_prompt = None, combine_prompt= None):
+def summarize_long_text(long_text,bedrock_client, modelId = 'amazon.titan-tg1-large', generationConfig = None, system_prompt = None, combine_prompt= None):
     if long_text is None or long_text == '':
         return
     output = ''
@@ -45,57 +45,7 @@ def summarize_long_text(long_text,bedrock_client, modelId = 'amazon.titan-tg1-la
         f"Now we have {num_docs} documents and the first one has {num_tokens_first_doc} tokens"
     )
 
-    # map_reduce and refine invoke LLM multiple times and takes time for obtaining final summary. Let's try map_reduce here.
-    # Set verbose=True if you want to see the prompts being used
-    #if map_prompt and combine_prompt:
-        #print('hello')
-        # summary_chain = load_summarize_chain(llm=llm,
-        #                                     chain_type='map_reduce',
-        #                                     map_prompt=map_prompt,
-        #                                     combine_prompt=combine_prompt,
-        # #                                      verbose=True
-        #                                     )
-        # map_chain = LLMChain(llm=llm, prompt=map_prompt)
-        # reduce_chain = LLMChain(llm=llm, prompt=combine_prompt)
-        # # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
-        # combine_documents_chain = StuffDocumentsChain(
-        #     llm_chain=reduce_chain, document_variable_name="text"
-        # )
-        # # Combines and iteravely reduces the mapped documents
-        # reduce_documents_chain = ReduceDocumentsChain(
-        #     # This is final chain that is called.
-        #     combine_documents_chain=combine_documents_chain,
-        #     # If documents exceed context for `StuffDocumentsChain`
-        #     collapse_documents_chain=combine_documents_chain,
-        #     # The maximum number of tokens to group documents into.
-        #     token_max=4000,
-        # )
-
-        # # Combining documents by mapping a chain over them, then combining results
-        # summary_chain = MapReduceDocumentsChain(
-        #     # Map chain
-        #     llm_chain=map_chain,
-        #     # Reduce chain
-        #     reduce_documents_chain=reduce_documents_chain,
-        #     # The variable name in the llm_chain to put the documents in
-        #     document_variable_name="text",
-        #     # Return the results of the map steps in the output
-        #     return_intermediate_steps=False,
-        
-
-    #     summary_chain = load_summarize_chain(
-    #         llm,
-    #         chain_type="refine",
-    #         question_prompt=map_prompt,
-    #         refine_prompt=combine_prompt,
-    #         return_intermediate_steps=True,
-    #     )
-
-    # else:
-    #     summary_chain = load_summarize_chain(llm=llm, chain_type="map_reduce", verbose=False)
-    template = "You are a product analyst that summarizes the product reviews."
-    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-    human_template="{text}"
+    system_message_prompt = SystemMessagePromptTemplate.from_template(system_prompt)
     human_message_prompt = HumanMessagePromptTemplate.from_template(combine_prompt)
     prompt = ChatPromptTemplate.from_messages(
         [system_message_prompt, human_message_prompt],

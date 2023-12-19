@@ -23,25 +23,28 @@ def load_data():
     data = pd.read_csv("./data/amazon_vfl_reviews.csv")
     return data
     
-def display_product_review_summary(review):
+def display_product_review_summary(review, isText = False):
     
     with st.expander("See output"):
         st.write(review)
     
-    # Claude v2.1 always returns text with json
-    try:
-        # Find the index of the first '{' and the last '}'
-        start_idx = review.index('{')
-        end_idx = review.rindex('}') + 1
+    json_data = review
+    # substring if the output is text
+    if isText:
+        # Claude v2.1 always returns text with json
+        try:
+            # Find the index of the first '{' and the last '}'
+            start_idx = review.index('{')
+            end_idx = review.rindex('}') + 1
 
-        # Extract the JSON string
-        json_string = review[start_idx:end_idx]
-        
-        # Load JSON data
-        json_data = json.loads(json_string)
-    except json.JSONDecodeError:
-        print("Error decoding JSON.")
-        return 'Cannot summarize review'
+            # Extract the JSON string
+            json_string = review[start_idx:end_idx]
+            
+            # Load JSON data
+            json_data = json.loads(json_string)
+        except json.JSONDecodeError:
+            print("Error decoding JSON.")
+            return 'Cannot summarize review'
 
     #json_data = json.loads(review)
 
@@ -70,15 +73,10 @@ def generate_review_summary (product_reviews, product_name):
     if product_reviews is None:
         return
     
-    product_reviews = f"""Product Name:{product_name}\n
+    reviews = f"""Product Name:{product_name}\n
     Reviews: {product_reviews}
     """
-    map_prompt = """
-    Write a concise summary of the following product reviews:
-    "{text}"
-    CONCISE SUMMARY:
-    """
-    map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
+    system_prompt = "You are a product analyst that summarizes the product reviews."
 
     combine_prompt = """
     Generate summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
@@ -100,17 +98,7 @@ def generate_review_summary (product_reviews, product_name):
         }}
     </outputFormat>
 
-
     """
-    combine_prompt_template = PromptTemplate(template=combine_prompt, input_variables=["text"])
-    #modelId = 'amazon.titan-tg1-large'
-    # inference_config = {
-    #                         "maxTokenCount":3072,
-    #                         "stopSequences":[],
-    #                         "temperature":0,
-    #                         "topP":0.9
-    #                         }
-    #modelId = 'anthropic.claude-v1'
     inference_config = {
                                 "max_tokens_to_sample":4096,
                                 "temperature":0.1,
@@ -119,8 +107,10 @@ def generate_review_summary (product_reviews, product_name):
                                 "stop_sequences":[]
                         }
     #print(f'Reviews:{product_reviews}')
-    summary = langchain.summarize_long_text(product_reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, map_prompt, combine_prompt)
-    #summary = st.session_state.api.get_text("")
+    #summary = langchain.summarize_long_text(reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, system_prompt, combine_prompt)
+    #display_product_review_summary(isText= True)
+    summary = st.session_state.api.summarize_reviews(product_name, product_reviews)
+    #print(summary)
     display_product_review_summary(summary)
     return summary
 
@@ -238,7 +228,8 @@ def configure_logging():
 if __name__ == "__main__":
     st.title("Summarize Product Reviews")
     #modelId = 'amazon.titan-tg1-xlarge'
-    modelId = 'anthropic.claude-v2:1'
+    #modelId = 'anthropic.claude-v2:1'
+    modelId = 'anthropic.claude-v2'
     #modelId = 'anthropic.claude-instant-v1'
     data = load_data()
 
