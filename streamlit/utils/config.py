@@ -57,13 +57,14 @@ def getOpenSearchConfig():
 def getBedrockConfig():
     br_endpoint = os.environ.get('BR_ENDPOINT', '')
     br_region = os.environ.get('BR_REGION','us-west-2')
+    br_assume_role = os.environ.get('BR_ASSUME_ROLE', None)
 
     #br_endpoint = ''
     #br_region = 'us-east-1'
 
     #print(f'Bedrock: {br_endpoint}, {br_region}')
 
-    return br_endpoint, br_region
+    return br_endpoint, br_region, br_assume_role
 
 @st.cache_resource
 def load_config():

@@ -23,7 +23,7 @@ from io import BytesIO
 
 class BedrockAssistant():
     def __init__(self, modelId, logger = None):
-        self.b_endpoint, self.b_region = config.getBedrockConfig()
+        self.b_endpoint, self.b_region, self.b_assume_role = config.getBedrockConfig()
         self.key, self.secret, self.region, self.sessionToken = config.getEnvCredentials()
         self.modelId = modelId
         self.logger = logger
@@ -73,6 +73,9 @@ class BedrockAssistant():
             target_region = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION"))
         else:
             target_region = region
+        
+        if self.b_assume_role is not None:
+            assumed_role = self.b_assume_role
 
         print(f'Keys: Access Key ID: {aws_access_key_id}, Secret: {aws_secret_access_key}, Region: {target_region}, Endpoint: {endpoint_url}')
 

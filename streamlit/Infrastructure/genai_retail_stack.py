@@ -284,7 +284,8 @@ class GenAiRetailStack(Stack):
                         parameter_name=f"{self.bedrock_key_path}api_url",
                         version=1
                     )
-                )
+                ),
+                "BR_ASSUME_ROLE": task_role.role_arn,  
             }            
         )
         
