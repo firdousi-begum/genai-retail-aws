@@ -51,7 +51,7 @@ class GenAIRetailAPI():
             # Check the response status and content
             if response.status_code == 200:
                 result = response.json()
-                #print(f"API response: {result}")
+                print(f"API response: {result}")
                 return result
             else:
                 print(f"API request failed with status code {response.status_code}: {response.text}")
