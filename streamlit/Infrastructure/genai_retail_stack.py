@@ -229,8 +229,9 @@ class GenAiRetailStack(Stack):
         )
 
         # Define environment variables for the container
+        # Define environment variables for the container
         environment_variables = {
-            "ASSUMED_ROLE_ARN": task_role.role_arn
+            "ASSUMED_ROLE_ARN": f"{task_role.role_arn}"
         }
 
         container = task_definition.add_container(
