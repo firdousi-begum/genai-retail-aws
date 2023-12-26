@@ -151,7 +151,7 @@ def load_demo():
                     SENTIMENT:
                     """
                     product_reviews = "\n".join(reviews_df['review'])
-                    product_reviews = combine_prompt + product_reviews
+                    #product_reviews = combine_prompt + product_reviews
                     summary = generate_review_summary(product_reviews, selected_product)
 
             st.markdown("#### Product Reviews")

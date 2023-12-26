@@ -1,12 +1,12 @@
 import requests, os
 import json
+from urllib.parse import urljoin
 
 
 class GenAIRetailAPI():
-    api_url = os.environ.get('API_URL', '')
 
     def __init__(self, logger = None):
-        self.api_url = self.api_url
+        self.api_url = os.environ.get('API_URL', '')
         self.headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -19,7 +19,7 @@ class GenAIRetailAPI():
             **args
         }
         
-        api = self.api_url+ "/generate"
+        api = urljoin(self.api_url, "generate")
         print('API URL: '+ api)
         
         try:
@@ -43,15 +43,16 @@ class GenAIRetailAPI():
             **args
         }
         
-        api = self.api_url+ "/summarize/reviews"
+        api = urljoin(self.api_url, "summarize/reviews")
         print('API URL: '+ api)
+        #print(f'Payload: {payload}')
         
         try:
             response = requests.post(api, headers=self.headers, data=json.dumps(payload))
             # Check the response status and content
             if response.status_code == 200:
                 result = response.json()
-                print(f"API response: {result}")
+                #print(f"API response: {result}")
                 return result
             else:
                 print(f"API request failed with status code {response.status_code}: {response.text}")
