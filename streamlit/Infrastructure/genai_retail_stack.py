@@ -228,6 +228,11 @@ class GenAiRetailStack(Stack):
             task_role=task_role
         )
 
+        # Define environment variables for the container
+        environment_variables = {
+            "ASSUMED_ROLE_ARN": task_role.role_arn
+        }
+
         container = task_definition.add_container(
             "genai-retail-streamlit-container",
             image=ecs.ContainerImage.from_docker_image_asset(docker_image),
@@ -287,9 +292,7 @@ class GenAiRetailStack(Stack):
                 ),
                
             },
-            environment= {
-                  "BR_ASSUME_ROLE": task_role.role_arn, 
-            }         
+            environment= environment_variables
         )
         
         container.add_port_mappings(
