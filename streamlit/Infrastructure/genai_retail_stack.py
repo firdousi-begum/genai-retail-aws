@@ -285,7 +285,6 @@ class GenAiRetailStack(Stack):
                         version=1
                     )
                 ),
-                "BR_ASSUME_ROLE": task_role.role_arn,  
             }            
         )
         
