@@ -74,8 +74,8 @@ class BedrockAssistant():
         else:
             target_region = region
         
-        # if self.b_assume_role is not None:
-        #     assumed_role = self.b_assume_role
+        if self.b_assume_role is not None:
+            assumed_role = self.b_assume_role
 
         print(f'Keys: Access Key ID: {aws_access_key_id}, Secret: {aws_secret_access_key}, Region: {target_region}, Endpoint: {endpoint_url}')
 

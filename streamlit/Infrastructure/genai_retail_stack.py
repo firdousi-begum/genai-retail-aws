@@ -285,7 +285,11 @@ class GenAiRetailStack(Stack):
                         version=1
                     )
                 ),
-            }            
+               
+            },
+            environment= {
+                  "BR_ASSUME_ROLE": task_role.role_arn, 
+            }         
         )
         
         container.add_port_mappings(
