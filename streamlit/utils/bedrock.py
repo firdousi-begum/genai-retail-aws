@@ -74,19 +74,19 @@ class BedrockAssistant():
         else:
             target_region = region
         
-        if self.b_assume_role is not None:
-            assumed_role = self.b_assume_role
+        # if self.b_assume_role is not None:
+        #     assumed_role = self.b_assume_role
 
         print(f'Keys: Access Key ID: {aws_access_key_id}, Secret: {aws_secret_access_key}, Region: {target_region}, Endpoint: {endpoint_url}')
 
 
         print(f"Create new client\n  Using region: {target_region}")
         if aws_access_key_id == '' or aws_secret_access_key == '':
-            session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
-            #session_kwargs = {"region_name": target_region}
+            #session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
+            session_kwargs = {"region_name": target_region}
         else:
-            session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
-            #session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key}
+            #session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
+            session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key}
         client_kwargs = {**session_kwargs}
 
 
