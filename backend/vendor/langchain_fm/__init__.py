@@ -1,7 +1,7 @@
 """The langchain module
 """
 
-from .claude import ClaudeInstantV1, ClaudeV1, ClaudeV2
+from .claude import ClaudeInstantV1, ClaudeV1, ClaudeV2, ClaudeV21
 from .titan_embeddings import TitanTextEmbeddings, TitanTextEmbeddingsV2, TitanTextEmbeddingsOld
 from .langchain import LangChainBedrockModel
 from .exceptions import BedrockInvalidModelError
@@ -18,6 +18,7 @@ __all__ =[
     "ClaudeInstantV1",
     "ClaudeV1",
     "ClaudeV2",
+    "ClaudeV21",
     "LangChainBedrockModel",
     "OSExtendedRetriever",
     'MongoDBExtendedRetriever',
@@ -31,6 +32,7 @@ __model_map = {
     ClaudeInstantV1.model_id: ClaudeInstantV1,
     ClaudeV1.model_id: ClaudeV1,
     ClaudeV2.model_id: ClaudeV2,
+    ClaudeV21.model_id: ClaudeV21,
 }
 
 def from_model_id(modelId: str, **kwargs) -> LangChainBedrockModel:

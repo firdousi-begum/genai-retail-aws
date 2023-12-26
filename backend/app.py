@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 from chalice import Chalice, BadRequestError
-from bedrock_fm import ClaudeV2, BedrockService, ClaudeV21
+from bedrock_fm import ClaudeV2, BedrockService, ClaudeV21, from_model_id
 import boto3
 import logging
 import backoff
 from chalicelib.shopping_agent import ShoppingAssistant
+from chalicelib.summarize import SummarizeAssistant
 from urllib.parse import urlparse, parse_qs
-import os
+import json
 import langchain
 logger = logging.getLogger()
 
@@ -20,6 +21,7 @@ cd2 = ClaudeV2(client=bedrock, token_count=4096, temperature=0, top_p=0.9)
 cd21 = ClaudeV21(client=bedrock, token_count=2000, temperature=0.2)
 br_service = BedrockService(client=bedrock_service)
 assistant = ShoppingAssistant(client = bedrock, logger= logger)
+summarize = SummarizeAssistant(client=bedrock, logger=logger)
 
 
 @app.route('/')
@@ -119,9 +121,79 @@ def generateText():
     prompt = body_params.get('prompt')
 
     try:
-        output = cd2.generate(prompt)
+        output = cd21.generate(prompt)
 
         return output
     except Exception as e:
         return str(e)
+    
+@app.route('/summarize/reviews', methods=['POST'])
+@backoff.on_exception(backoff.expo, bedrock.exceptions.ThrottlingException)
+def summarizeReviews():
+
+    print('summarize api')
+    # Access the current request object
+    current_request = app.current_request
+
+    # Read body parameters from the POST request
+    body_params = current_request.json_body  # Assumes the body contains JSON data
+    
+    # Access specific parameters
+    product_reviews = body_params.get('product_reviews')
+    product_name = body_params.get('product_name')
+
+    reviews = f"""Product Name:{product_name}\n
+    Reviews: {product_reviews}
+    """
+
+    system_prompt = "You are a product analyst that summarizes the product reviews."
+    
+    combine_prompt = """
+    Generate summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
+    ```{text}```
+
+    Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the generated summary, 
+    and generate maximum 5 most important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
+    The output should ALWAYS be valid JSON document with text inside the 'outputFormat' below, do NOT add any text in the output before JSON . 
+    Don't include any preamble.
+    <outputFormat>
+        {{
+            "product_reviews_summary": "Maximum 200 words summary.",
+            "overall_sentiment": "POSITIVE or NEGATIVE or MIXED",
+            "keywords_highlight": [
+                {{"keyword": "Quality", "sentiment": "POSITIVE"}},
+                {{"keyword": "Affordability", "sentiment": "NEGATIVE"}},
+                {{"keyword": "Customer Service", "sentiment": "MIXED"}}
+            ]
+        }}
+    </outputFormat>
+    """
+
+    try:
+        output = summarize.summarize_long_text(reviews, system_prompt, combine_prompt)
+        print(output)
+
+        # Claude v2.1 always returns text with json
+
+        # Find the index of the first '{' and the last '}'
+        start_idx = output.index('{')
+        end_idx = output.rindex('}') + 1
+
+        # Extract the JSON string
+        json_string = output[start_idx:end_idx]
+
+        print(json_string)
+        
+        # Load JSON data
+        json_data = json.loads(json_string)
+
+        return json_data
+    
+    except json.JSONDecodeError as e:
+        print("Error decoding JSON.", e)
+        return 'Cannot summarize review'
+    except Exception as e:
+        print("Error decoding JSON.", e)
+        return str(e)
+
 

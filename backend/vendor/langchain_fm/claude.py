@@ -86,3 +86,9 @@ class ClaudeV2(Claude):
 
     def model_id(self):
         return "anthropic.claude-v2"
+
+@define
+class ClaudeV21(Claude):
+
+    def model_id(self):
+        return "anthropic.claude-v2:1"
