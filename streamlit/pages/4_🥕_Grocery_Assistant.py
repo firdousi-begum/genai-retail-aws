@@ -126,9 +126,7 @@ def retrieve_recipes(query: str) -> str:
 @tool(return_direct=True)
 def add_products_to_cart(products: str) -> str:
     """
-    Adds the specified products to cart.
-    Use it when the user asks for adding the products to shopping cart. For example `Can you add the products to cart?`
-    Return the output without processing further.
+    Use it when the user asks for adding the products to shopping cart or buy products. For example `Can you add the products to cart?`
     """
     st.session_state.gc_shopping_cart.append(products)
     new_items =  "\n ".join([f"- {item}" for item in st.session_state.gc_shopping_cart])
@@ -181,7 +179,7 @@ def get_recipe_detail(name: str) -> str:
 @tool
 def get_product_detail(name: str) -> str:
     """
-    Use it to find more information for a specific product, such as the size, weight, benefits or description.
+    Use it when user asks for more information for a specific product, such as the size, weight, nutrition, benefits or description.
     """
     try:
         print(f'in method: {st.session_state.gc_assistant.products_detail}')
@@ -193,13 +191,8 @@ def get_product_detail(name: str) -> str:
 
 @tool(return_direct=True)
 def get_suggested_products_for_recipe(recipe_name: str) -> str:
-    """Use this only if the user would like to buy or find certain products connected to a specific recipe example 'Can you give me the products I can buy for the lasagne?'",
-
-    Args:
-        recipe_name: The recipe name.
-
-    Returns:
-        A list of products the user might want to buy.
+    """Use this to find certain products connected to a specific .
+     For example 'Can you give me the products I can buy for the lasagne?'"
     """
     try:
         # recipe_to_product_mapping = {
@@ -210,7 +203,7 @@ def get_suggested_products_for_recipe(recipe_name: str) -> str:
         #         "./products/classic_tomatoes.txt",
         #     ]
         # }
-
+        recipe_name = recipe_name.replace("_", " ")
         recipe_to_product_mapping = {
             "traditional lasagne": "angus beef lean mince, large onions, classic carrots, classic tomatoes",
             "vegetarian lasagne": "spinach, soya chunk, large onions, classic carrots, classic tomatoes",

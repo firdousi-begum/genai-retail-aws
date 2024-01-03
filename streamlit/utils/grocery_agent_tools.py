@@ -1,15 +1,11 @@
-from langchain.tools import tool
-from langchain.llms.bedrock import Bedrock
 from langchain.embeddings import BedrockEmbeddings
 from typing import Any, Iterator, List
 from langchain.document_loaders import TextLoader
-from langchain.agents import AgentType, initialize_agent, Tool
+from langchain.agents import AgentType, initialize_agent
 from langchain.vectorstores import FAISS
 from langchain.vectorstores.base import VectorStoreRetriever
-from langchain.chains import RetrievalQA
 from utils import bedrock
 from langchain.memory import ConversationBufferMemory
-from langchain import PromptTemplate
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.schema import Document
 from langchain.prompts.chat import MessagesPlaceholder
@@ -209,7 +205,7 @@ class GroceryAssistant:
             tools,
             llm,
             agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-            verbose=True,
+            verbose=False,
             agent_kwargs={
                 "prefix": PREFIX,   
                 'suffix' : SUFFIX,
