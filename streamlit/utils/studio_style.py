@@ -185,6 +185,12 @@ def apply_studio_style():
                 border-radius: 5px;
                 box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             }
+            
+            [data-testid="stChatInput"] {
+                box-shadow: -5px -10px 10px rgba(0, 0, 0,0.5);
+                background-color: #230930;
+            }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -266,7 +272,6 @@ def get_background():
     box-shadow: -5px -10px 10px rgba(0, 0, 0,0.5);
     border-radius: 5px;
     }}
-
     </style>
     """
 
