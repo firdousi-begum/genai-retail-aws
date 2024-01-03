@@ -355,14 +355,11 @@ def load_sidebar():
     
     st.session_state.st_request = request
 
+@st.cache_resource(ttl=1800)
 def getAgent():
-    modelId = models['Amazon SageMaker JumpStart'][0]
-    st.session_state.st_assistant = stability.StabilityAssistant(modelId)
-
-def getBedrockAgent():
     modelId = st.session_state.modelId
-    st.session_state.b_assistant = bedrock.BedrockAssistant(modelId, st.session_state.logger)
-    
+    st.session_state.st_assistant = stability.StabilityAssistant(models['Amazon SageMaker JumpStart'][0])
+    st.session_state.b_assistant = bedrock.BedrockAssistant(modelId, st.session_state.logger)  
 
 def generateImages(st_assistant,b_assistant, generation_params):
     if st.session_state.mode == 'Amazon Bedrock API':
@@ -377,19 +374,17 @@ def main():
     # Streamlit app layout
     st.title("Generate Ad Campaign Images")
                     
-    mode_type = params.selectbox("Select Image Generator", providers, key="mode")
+    mode_type = params.selectbox("Select Image Generator", providers, key="mode", on_change=getAgent.clear)
     modelIds = [item for item in models[mode_type]]
-    model = params.selectbox("Select Image Model", modelIds, key="modelId")
+    model = params.selectbox("Select Image Model", modelIds, key="modelId", on_change=getAgent.clear)
 
     keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
     formatted_labels = [keyword_label(keyword) for keyword in keywords]
     st.write(' '.join(formatted_labels), unsafe_allow_html=True)
     apply_studio_style()
             
-    if st.session_state.st_assistant is None:
-        getAgent()
-    if st.session_state.b_assistant is None:
-        getBedrockAgent()
+    #if st.session_state.st_assistant is None or st.session_state.b_assistant is None:
+    getAgent()
 
     load_sidebar()
 

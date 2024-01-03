@@ -335,6 +335,7 @@ def adaptImage(
         output.save('adapted_image.png')
         return output                  
 
+@st.cache_resource(ttl=1800)
 def getAgent():
     modelId = st.session_state.modelId
     assistant = stability.StabilityAssistant(models['Amazon SageMaker JumpStart'][0])
@@ -350,7 +351,7 @@ def load_keywords():
 
 def load_sidebar():
     prompts.header("Product ideator")
-    selected_generation_type = prompts.selectbox("Select Generation Type", generation_types, key="generation_type" )
+    selected_generation_type = prompts.selectbox("Select Generation Type", generation_types, key="generation_type")
 
     mode_index = 0
     model_index = 0
@@ -358,9 +359,9 @@ def load_sidebar():
         mode_index = providers.index('Amazon SageMaker JumpStart')
         model_index = models['Amazon SageMaker JumpStart'].index('huggingface-pytorch-inference-2023-11-12-17-36-53-941')
     
-    mode_type = prompts.selectbox("Select Image Generator", providers, index=mode_index, key="mode")
+    mode_type = prompts.selectbox("Select Image Generator", providers, index=mode_index, key="mode", on_change=getAgent.clear )
     modelIds = [item for item in models[mode_type]]
-    model = prompts.selectbox("Select Image Model", modelIds, index =model_index, key="modelId")
+    model = prompts.selectbox("Select Image Model", modelIds, index =model_index, key="modelId", on_change=getAgent.clear)
 
     prompts.markdown("### Make your pick")
     idea = ''
@@ -380,7 +381,7 @@ def load_sidebar():
         default_model = fms.index('Bedrock Titan')
         text_model = prompts.selectbox(
             'Select a Text FM',
-            options=fms, index=default_model, key="text_model")
+            options=fms, index=default_model, key="text_model", on_change=getAgent.clear)
         
         load_keywords()
 
@@ -435,8 +436,8 @@ def main():
 
     load_sidebar()
 
-    if st.session_state.st1_assistant is None or st.session_state.bedrock_assistant is None:
-        st.session_state.st1_assistant, st.session_state.bedrock_assistant = getAgent()
+    #if st.session_state.st1_assistant is None or st.session_state.bedrock_assistant is None:
+    st.session_state.st1_assistant, st.session_state.bedrock_assistant = getAgent()
 
 
     # Generate button
