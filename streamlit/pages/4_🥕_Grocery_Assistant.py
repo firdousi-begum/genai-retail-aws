@@ -66,7 +66,7 @@ def GetAnswers(query, tools, assistant):
 @tool (return_direct=True)
 def retrieve_recipes(query: str) -> str:
     """
-    Searches the recipe catalog to find recipes for the query.
+    Use this ONLY when user asks for recipes otherwise use retrieve_products tool.
     Return the output without processing further.
     """
     print('begin')
@@ -83,9 +83,10 @@ def add_products_to_cart(products: str) -> str:
     Use it when the user asks for adding the products to shopping cart or buy products. For example `Can you add the products to cart?`
     """
     st.session_state.gc_shopping_cart.append(products)
-    new_items =  "\n ".join([f"- {item}" for item in st.session_state.gc_shopping_cart])
-    
-    st.sidebar.write(new_items)
+    # st.sidebar.markdown(f"### Shopping cart:")
+    # new_items =  "\n ".join([f"- {item}" for item in st.session_state.gc_shopping_cart])
+    # st.sidebar.write(new_items)
+
     st.sidebar.success(f"Added '{products}' to the cart!")
     #st.session_state.logger.info(f'recipies: {markdown_list}')
     res = f'Added products {products} to cart'
@@ -93,9 +94,9 @@ def add_products_to_cart(products: str) -> str:
     return res
     
 @tool(return_direct=True)
-def retrieve_products(query: str) -> str:
-    """Searches the product catalog to find products for the query.
-    Use it when the user asks for the products available for a specific item. For example `Can you show me which onions I can buy?`
+def find_products(query: str) -> str:
+    """
+    Use it when the user wants to find product in the catalog. For example `Can you show me which onions I can buy?`
     """
     docs = st.session_state.product_retriever.get_relevant_documents(query)
     #print (f"doc metadata: {get_name(docs[0].metadata['source'])}")
@@ -145,7 +146,7 @@ def get_product_detail(name: str) -> str:
 
 @tool(return_direct=True)
 def get_suggested_products_for_recipe(recipe_name: str) -> str:
-    """Use this to find certain products connected to a specific .
+    """"Use this only if the user would like find certain products connected to a specific recipe to buy.
      For example 'Can you give me the products I can buy for the lasagne?'"
     """
     try:
@@ -177,7 +178,7 @@ def getAgent():
     tools = [
                 retrieve_recipes,
                 add_products_to_cart,
-                retrieve_products,
+                find_products,
                 get_product_detail,
                 get_recipe_detail,
                 get_suggested_products_for_recipe,
@@ -185,12 +186,15 @@ def getAgent():
             ]
     return assistant, tools
 
-def get_retriever(assistant):
+@st.cache_resource
+def get_retriever():
+    assistant = st.session_state.gc_assistant
     recipe_retriever = assistant.create_retriever(top_k_results=2, dir_path="./data/grocery-bot/recipies/*")
     product_retriever = assistant.create_retriever(top_k_results=3, dir_path="./data/grocery-bot/products/*")
     return recipe_retriever, product_retriever
 
 def main():
+
     if len(gc_msgs.messages) == 0 or st.sidebar.button("Clear message history"):
         #print('clear')
         gc_msgs.clear()
@@ -211,12 +215,17 @@ def main():
             st.session_state.gc_assistant = assistant  # Store the assistant in session state
             st.session_state.gc_tools = tools
             if st.session_state.product_retriever is None or st.session_state.recipe_retriever is None:
-                st.session_state.product_retriever, st.session_state.recipe_retriever = get_retriever(assistant)
+                st.session_state.recipe_retriever, st.session_state.product_retriever = get_retriever()
              
 
         with st.chat_message("assistant"):
             response = GetAnswers(user_query, st.session_state.gc_tools, st.session_state.gc_assistant)
             st.markdown(response)
+
+    if st.session_state.gc_shopping_cart is not None and len(st.session_state.gc_shopping_cart) >0:
+        st.sidebar.markdown(f"### Shopping cart:")
+        new_items =  "\n ".join([f"- {item}" for item in st.session_state.gc_shopping_cart])
+        st.sidebar.write(new_items)
 
 @st.cache_resource
 def configure_logging():
@@ -232,7 +241,7 @@ if __name__ == "__main__":
     st.title("🥕Grocery-Bot Assistant")
     
     #modelId = 'amazon.titan-tg1-large'
-    modelId = 'anthropic.claude-v2:1'
+    modelId = 'anthropic.claude-instant-v1'
 
     keywords = [f'Model Id: {modelId}','Amazon Bedrock','Langchain', 'ReAct', 'Vector Store: FAISS']
     formatted_labels = [keyword_label(keyword) for keyword in keywords]
