@@ -43,6 +43,7 @@ class GenAiRetailStack(Stack):
 
         self.config = config
         self.app_name = self.config.app_name
+        self.number_of_tasks = 4
         
         self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
         self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
@@ -332,7 +333,7 @@ class GenAiRetailStack(Stack):
             self,
             "Service",
             cluster=cluster,
-            desired_count=1,
+            desired_count=self.number_of_tasks,
             task_definition=task_definition,
             security_groups=[load_balancer_security_group],
             assign_public_ip=True,
@@ -342,8 +343,9 @@ class GenAiRetailStack(Stack):
 
         # Setup AutoScaling policy
         scaling = service.auto_scale_task_count(
-            max_capacity=4
+            max_capacity=8
         )
+
         scaling.scale_on_cpu_utilization(
             "CpuScaling",
             target_utilization_percent=80,
