@@ -236,7 +236,7 @@ def main():
     if len(gc_msgs.messages) == 0 or st.sidebar.button("Clear message history"):
         #print('clear')
         gc_msgs.clear()
-        #getAgent.clear()
+        getAgent.clear()
         st.session_state.gc_assistant = None
         st.session_state.gc_shopping_cart = []
         gc_msgs.add_ai_message(f"How can I help you?")
