@@ -372,7 +372,7 @@ def generateImages(st_assistant,b_assistant, generation_params):
 
 def main():
     # Streamlit app layout
-    st.title("Generate Ad Campaign Images")
+    st.title("🎨Generate Ad Campaign Images")
                     
     mode_type = params.selectbox("Select Image Generator", providers, key="mode", on_change=getAgent.clear)
     modelIds = [item for item in models[mode_type]]

@@ -150,7 +150,7 @@ def configure_logging():
     return logger
 
 if __name__ == "__main__":
-    st.title("Generate Product Descriptions")
+    st.title("📖Generate Product Descriptions")
     # modelId = 'amazon.titan-tg1-xlarge'
     modelId = 'anthropic.claude-v2:1'
 

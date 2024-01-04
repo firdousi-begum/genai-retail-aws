@@ -432,7 +432,7 @@ def load_sidebar():
 def main():
     # Streamlit app layout
     
-    st.markdown("# Take your product idea to the next level")
+    st.markdown("# Take your 💡product idea to the next level")
 
     load_sidebar()
 

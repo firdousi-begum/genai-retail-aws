@@ -12,30 +12,6 @@ st.set_page_config(
     page_icon="🛒",
 )
 
-st.title("Grocery-Bot Assistant")
-
-def write_top_bar():
-    col1, col2, col3 = st.columns([2, 10, 5])
-    #with col1:
-        #st.image("🥕", width=50)
-    with col2:
-        header = "Grocery-Bot Assistant"
-        st.write(f"<h3 class='main-header'>{header}</h3>", unsafe_allow_html=True)
-    # with col3:
-    #     clear = st.button("Clear Chat History")
-
-    #return clear
-
-
-# clear = write_top_bar()
-
-#modelId = 'amazon.titan-tg1-large'
-modelId = 'anthropic.claude-v2:1'
-
-keywords = [f'Model Id: {modelId}','Amazon Bedrock','Langchain', 'ReAct', 'Vector Store: FAISS']
-formatted_labels = [keyword_label(keyword) for keyword in keywords]
-st.write(' '.join(formatted_labels), unsafe_allow_html=True)
-apply_studio_style()
 
 assistant =None
 recipe_retriever = None
@@ -56,28 +32,6 @@ if "gc_shopping_cart" not in st.session_state:
 
 # Sidebar section
 #st.sidebar.title("Shopping Cart")
-
-
-# Add a description for this specific use case
-st.markdown(
-    '''
-    #### Use case:
-    ###### Welcome to the **Grocery Assistant**, your guide to planning and preparing a delicious dinner with ease. Imagine you are a valued customer of Cymbal Grocery, your favorite grocery store. You have a craving for a special dish, like lasagne, but you're not sure where to start or what ingredients you need. That's where our new conversational bot, GroceryBot, comes in!
-
-    **GroceryBot** is here to assist you at every step of your dinner journey:
-
-    1. **Suggesting a Recipe**: Simply tell GroceryBot the dish you'd like to cook, and it will recommend a delicious recipe for you to try. Try 'salad' or 'lasagne'
-
-    2. **Getting Ingredients and Cooking Instructions**: Once you've chosen a recipe, GroceryBot will provide you with a list of ingredients and clear cooking instructions.
-
-    3. **Suggesting Products**: GroceryBot will suggest products that you might want to buy for the chosen recipe, ensuring you have everything you need to cook your meal. Ask 'Help me find products to buy for the recipe'
-
-    4. **Buying Products**: GroceryBot can also help you order products. Ask 'Add the products to my cart'
-
-    5. **Finding New Products for Dinner**: In addition to your chosen recipe, GroceryBot can help you discover new and exciting products that would complement your dinner experience. Ask 'Do you have chocolate cake?'
-
-
-    ''')  
 
 result_label = 'Generated Description'
 # Setup memory for contextual conversation
@@ -274,6 +228,37 @@ def configure_logging():
     return logger
 
 if __name__ == "__main__":
+        
+    st.title("🥕Grocery-Bot Assistant")
+    
+    #modelId = 'amazon.titan-tg1-large'
+    modelId = 'anthropic.claude-v2:1'
+
+    keywords = [f'Model Id: {modelId}','Amazon Bedrock','Langchain', 'ReAct', 'Vector Store: FAISS']
+    formatted_labels = [keyword_label(keyword) for keyword in keywords]
+    st.write(' '.join(formatted_labels), unsafe_allow_html=True)
+    apply_studio_style()
+
+    # Add a description for this specific use case
+    st.markdown(
+        '''
+        #### Use case:
+        ###### Welcome to the **Grocery Assistant**, your guide to planning and preparing a delicious dinner with ease. Imagine you are a valued customer of Cymbal Grocery, your favorite grocery store. You have a craving for a special dish, like lasagne, but you're not sure where to start or what ingredients you need. That's where our new conversational bot, GroceryBot, comes in!
+
+        **GroceryBot** is here to assist you at every step of your dinner journey:
+
+        1. **Suggesting a Recipe**: Simply tell GroceryBot the dish you'd like to cook, and it will recommend a delicious recipe for you to try. Try 'salad' or 'lasagne'
+
+        2. **Getting Ingredients and Cooking Instructions**: Once you've chosen a recipe, GroceryBot will provide you with a list of ingredients and clear cooking instructions.
+
+        3. **Suggesting Products**: GroceryBot will suggest products that you might want to buy for the chosen recipe, ensuring you have everything you need to cook your meal. Ask 'Help me find products to buy for the recipe'
+
+        4. **Buying Products**: GroceryBot can also help you order products. Ask 'Add the products to my cart'
+
+        5. **Finding New Products for Dinner**: In addition to your chosen recipe, GroceryBot can help you discover new and exciting products that would complement your dinner experience. Ask 'Do you have chocolate cake?'
+
+
+        ''')  
     if "logger" not in st.session_state:
         st.session_state.logger = configure_logging()
     main()

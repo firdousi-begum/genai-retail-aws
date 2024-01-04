@@ -226,7 +226,7 @@ def configure_logging():
     return logger
 
 if __name__ == "__main__":
-    st.title("Summarize Product Reviews")
+    st.title("⭐Summarize Product Reviews")
     #modelId = 'amazon.titan-tg1-xlarge'
     #modelId = 'anthropic.claude-v2:1'
     modelId = 'anthropic.claude-v2'
