@@ -12,7 +12,7 @@ def loadEnv():
         load_dotenv()
         
 
-@st.cache_resource
+@st.cache_resource(ttl=1800)
 def getEnvCredentials():
     loadEnv()
     key = os.environ.get('AWS_ACCESS_KEY_ID', '')

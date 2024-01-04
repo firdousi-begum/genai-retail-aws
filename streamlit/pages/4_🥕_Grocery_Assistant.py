@@ -216,6 +216,7 @@ def get_suggested_products_for_recipe(recipe_name: str) -> str:
     except KeyError:
         return "Could not find ingredients for this recipe"
 
+@st.cache_resource(ttl=1800)
 def getAgent():
     assistant = grocery_agent_tools.GroceryAssistant(modelId, st.session_state.logger)
     
