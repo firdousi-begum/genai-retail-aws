@@ -216,11 +216,9 @@ def get_suggested_products_for_recipe(recipe_name: str) -> str:
     except KeyError:
         return "Could not find ingredients for this recipe"
 
-@st.cache_resource(ttl=1800)
 def getAgent():
     assistant = grocery_agent_tools.GroceryAssistant(modelId, st.session_state.logger)
-    recipe_retriever = assistant.create_retriever(top_k_results=2, dir_path="./data/grocery-bot/recipies/*")
-    product_retriever = assistant.create_retriever(top_k_results=3, dir_path="./data/grocery-bot/products/*")
+    
     tools = [
                 retrieve_recipes,
                 add_products_to_cart,
@@ -230,13 +228,18 @@ def getAgent():
                 get_suggested_products_for_recipe,
                 #recipe_selector,
             ]
-    return assistant, product_retriever, recipe_retriever, tools
+    return assistant, tools
+
+def get_retriever(assistant):
+    recipe_retriever = assistant.create_retriever(top_k_results=2, dir_path="./data/grocery-bot/recipies/*")
+    product_retriever = assistant.create_retriever(top_k_results=3, dir_path="./data/grocery-bot/products/*")
+    return recipe_retriever, product_retriever
 
 def main():
     if len(gc_msgs.messages) == 0 or st.sidebar.button("Clear message history"):
         #print('clear')
         gc_msgs.clear()
-        getAgent.clear()
+        #getAgent.clear()
         st.session_state.gc_assistant = None
         st.session_state.gc_shopping_cart = []
         gc_msgs.add_ai_message(f"How can I help you?")
@@ -248,12 +251,13 @@ def main():
     if user_query := st.chat_input(placeholder="Ask me anything!"):
         st.chat_message("user").write(user_query)
         #if st.session_state.gc_assistant is None:  # Check if assistant is uninitialized
-        assistant, product_retriever, recipe_retriever, tools = getAgent()
+        assistant,  tools = getAgent()
         if assistant:
             st.session_state.gc_assistant = assistant  # Store the assistant in session state
             st.session_state.gc_tools = tools
-            st.session_state.product_retriever = product_retriever
-            st.session_state.recipe_retriever = recipe_retriever
+            if st.session_state.product_retriever is None or st.session_state.recipe_retriever is None:
+                st.session_state.product_retriever, st.session_state.recipe_retriever = get_retriever(assistant)
+             
 
         with st.chat_message("assistant"):
             response = GetAnswers(user_query, st.session_state.gc_tools, st.session_state.gc_assistant)
