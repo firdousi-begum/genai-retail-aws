@@ -64,9 +64,9 @@ def GetAnswers(query, tools, assistant):
     return answer
 
 @tool (return_direct=True)
-def retrieve_recipes(query: str) -> str:
+def find_recipes(query: str) -> str:
     """
-    Use this ONLY when user asks for recipes otherwise use retrieve_products tool.
+    Use this ONLY when user asks for finding recipes otherwise use 'find_products' tool.
     Return the output without processing further.
     """
     print('begin')
@@ -96,7 +96,7 @@ def add_products_to_cart(products: str) -> str:
 @tool(return_direct=True)
 def find_products(query: str) -> str:
     """
-    Use it when the user wants to find product in the catalog. For example `Can you show me which onions I can buy?`
+    Use it whenever the user enquires about specific products or asks for its availability. For example `Can you show me which onions I can buy?`
     """
     docs = st.session_state.product_retriever.get_relevant_documents(query)
     #print (f"doc metadata: {get_name(docs[0].metadata['source'])}")
@@ -176,7 +176,7 @@ def getAgent():
     assistant = grocery_agent_tools.GroceryAssistant(modelId, st.session_state.logger)
     
     tools = [
-                retrieve_recipes,
+                find_recipes,
                 add_products_to_cart,
                 find_products,
                 get_product_detail,

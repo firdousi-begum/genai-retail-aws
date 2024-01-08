@@ -170,6 +170,7 @@ class GroceryAssistant:
 
         """
         SUFFIX = """
+        Use the tool 'find_recipes' ONLY when user asks for finding recipes, otherwise search for products.
         Previous conversation history:
         {chat_history}
         Question: {input}

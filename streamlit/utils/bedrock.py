@@ -22,7 +22,7 @@ from io import BytesIO
 
 
 class BedrockAssistant():
-    def __init__(self, modelId, logger = None):
+    def __init__(self, modelId=None, logger = None):
         self.b_endpoint, self.b_region, self.b_assume_role = config.getBedrockConfig()
         self.key, self.secret, self.region, self.sessionToken = config.getEnvCredentials()
         self.modelId = modelId
