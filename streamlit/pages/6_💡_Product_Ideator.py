@@ -480,6 +480,7 @@ def load_demo():
                 #     st.write("**Example image for your product idea**: \n")
                 #     st.image(st.session_state.image)
 
+@st.cache_data
 def load_arch():
     st.markdown("#### Product Ideation: TEXT_IMAGE")
     st.image('data/architecture/product_ideation_arch_1.png')
