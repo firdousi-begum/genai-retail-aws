@@ -193,8 +193,7 @@ def get_retriever():
     product_retriever = assistant.create_retriever(top_k_results=3, dir_path="./data/grocery-bot/products/*")
     return recipe_retriever, product_retriever
 
-def main():
-
+def load_demo():
     if len(gc_msgs.messages) == 0 or st.sidebar.button("Clear message history"):
         #print('clear')
         gc_msgs.clear()
@@ -226,6 +225,69 @@ def main():
         st.sidebar.markdown(f"### Shopping cart:")
         new_items =  "\n ".join([f"- {item}" for item in st.session_state.gc_shopping_cart])
         st.sidebar.write(new_items)
+
+def load_arch():
+    st.image('data/architecture/grocery_assistant_1.png')
+    st.markdown(
+        '''
+        In this architecture:
+
+        1. Prompt is the user query about finding recipes and products.
+        2. Recipe Details and Product Details are added to the model's context to steer output.
+        3. RAG (Retrieval Augmented Generation) mechanism is used to retrieve relavant recipe and related products for adding to the context.
+        4. Amazon Bedrock API with the right LLM model is invoked to get the desired output.
+
+        '''
+    )
+    st.write("\n\n")
+    st.image('data/architecture/grocery_assistant_2.png')
+    st.markdown(
+        '''
+        For RAG:
+
+        1. Recipe and product details are embedded to vector using Amazon Titan Embeddings model.
+        2. Resultant vectors are stored in FAISS vector database.
+        3. When user queries for finding products to buy for a specific recipe, the recipe ingredients are embedded to vector and searched against products vector in FAISS. 
+        4. The resultant products from vector search is then returned to user.
+        5. Similar mechanism is used to find products based on diet preference.
+
+        '''
+    )
+
+    st.write("\n\n")
+
+    st.markdown(
+        '''
+
+        For giving additional capabilities to GroceryBot such as 'Ordering Products', we need give access to more tools:
+
+        1. For that we will use a pattern or framework called ReAct (Reasoning & Action) together with Langchain
+        2. The ReAct framework could enable large language models to interact with multiple external tools to obtain additional information that results in more accurate and fact-based responses and Langchain provides Off-the-shelf chains, components & abstractions make it easy to get started. 
+        3. We add more tools such as "Add to Cart" API to help ordering products.
+
+        '''
+    )
+
+    st.write("\n\n")
+    st.image('data/architecture/grocery_assistant_3.png')
+    st.markdown(
+        '''
+
+        When user asks for 'Adding products to cart':
+        1. the GroceryBot Thinks & Plan if it needs to use a tool and what tool to serve the request.
+        2. The Action step allows the model to interface with tool and obtain information from external sources such as knowledge bases or environments or just an API call.
+        3. The output is Observed, and this loop for thinking, planning and action continues until GroceryBot has all the information needed to fulfill user request.
+        4. The GroceryBot also maintains a short-term conversation memory with LangChain during the chat so that the user don't have to repeat themselves.
+        5. The products are added to cart and final confirmation is then returned to the user.
+
+        '''
+    )
+
+def main():
+    with st.expander("Architecture"):
+        load_arch()
+    load_demo()
+    
 
 @st.cache_resource
 def configure_logging():
