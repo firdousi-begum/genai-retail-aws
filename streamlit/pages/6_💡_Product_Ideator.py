@@ -43,7 +43,7 @@ prompts, params = st.sidebar.tabs(["Prompts", "Parameters"])
 
 
 # List of generation types
-generation_types = ["TEXT_IMAGE", "ADAPTER"]
+generation_types = ["TEXT_IMAGE", "SKTECH_ADAPTER"]
 
 providers = ['Amazon Bedrock API', 'Amazon SageMaker JumpStart']
 models = {
@@ -355,7 +355,7 @@ def load_sidebar():
 
     mode_index = 0
     model_index = 0
-    if selected_generation_type == "ADAPTER":
+    if selected_generation_type == "SKETCH_ADAPTER":
         mode_index = providers.index('Amazon SageMaker JumpStart')
         model_index = models['Amazon SageMaker JumpStart'].index('huggingface-pytorch-inference-2023-11-12-17-36-53-941')
     
@@ -400,7 +400,7 @@ def load_sidebar():
             options=languages, index=default_lang_ix, key ="language")
         key_phrases = ''
 
-    elif st.session_state.generation_type == "ADAPTER":
+    elif st.session_state.generation_type == "SKTECH_ADAPTER":
         st.write("**Instructions:** \n - Upload your image \n - Type a prompt to adapt it to new color or design, you will see your idea come to life.")
 
         product_idea =''
@@ -428,18 +428,7 @@ def load_sidebar():
 
         input_text = st.text_area('**What is your product idea?**', key='prod_text', value=idea)
 
-    
-def main():
-    # Streamlit app layout
-    
-    st.markdown("# Take your 💡product idea to the next level")
-
-    load_sidebar()
-
-    #if st.session_state.st1_assistant is None or st.session_state.bedrock_assistant is None:
-    st.session_state.st1_assistant, st.session_state.bedrock_assistant = getAgent()
-
-
+def load_demo():
     # Generate button
     if st.button("Ideate"):
         st.session_state.image=''
@@ -476,7 +465,7 @@ def main():
                 answer = answer.replace("$","\$") 
                 st.write(answer)
                 #st.balloons()       
-        elif st.session_state.generation_type == "ADAPTER":
+        elif st.session_state.generation_type == "SKTECH_ADAPTER":
             with st.spinner("Generating Product Idea..."):
                 st.image(
                     adaptImage( st.session_state.init_image,st.session_state.prod_text)
@@ -490,9 +479,59 @@ def main():
 
                 #     st.write("**Example image for your product idea**: \n")
                 #     st.image(st.session_state.image)
-       
-            
 
+def load_arch():
+    st.markdown("#### Product Ideation: TEXT_IMAGE")
+    st.image('data/architecture/product_ideation_arch_1.png')
+    st.markdown(
+        '''
+
+        1. Prompt specifies description of image you want to generate
+        2. For generating image, you can either select:\n\n
+            a. Amazon Bedrock API with the IMAGE model as [Stable Diffusion XL 1.0](https://stability.ai/stablediffusion) or [Amazon Titan Image Generator](https://docs.aws.amazon.com/bedrock/latest/userguide/titan-image-models.html)\n\n
+            b. Amazon SageMaker endpoint with hosted [Stable Diffusion XL 1.0](https://stability.ai/stablediffusion) model
+        3. The selected IMAGE model is invoked to generate high quality image output\n\n 
+            Amazon Titan Image Generator also adds invisible watermark to the output image for responsible AI.
+        4. Additionally, Amazon Bedrock API with the right LLM model is invoked to generate Product Description, Internal Memo, Press Release & Social Media campaign
+       
+        '''
+    )
+
+    st.markdown("#### Product Ideation: SKETCH_ADAPTER")
+    st.image('data/architecture/product_ideation_arch_2.png')
+    st.markdown(
+        '''
+        For visualizing Sketch to 3D image, T2I-Adapter is used together with Stable Diffusion SDXL 1.0 base model.
+        [T2I-Adapter](https://huggingface.co/blog/t2i-sdxl-adapters) is a lightweight adapter model that provides an additional conditioning input image (line art, canny, sketch, depth, pose) to better control image generation\n\n
+
+        1. The Input Image is a Sketch of product prototype that you want to visualize in different forms.\n\n
+            The traditional ideation process have its limits. Visualizing products in various materials, colors, and configurations was challenging. This manual approach also came with costs associated with extended development times
+        2. [Stable Diffusion XL 1.0](https://stability.ai/stablediffusion) model together with [Hugging Face T2I-ADAPTER](https://huggingface.co/blog/t2i-sdxl-adapters) with "Sketch Guided" conditioning is hosted on Amazon SageMaker
+        3. Amazon SageMaker endpoint is invoked to generate high quality image output
+
+        '''
+    )
+    
+
+def main():
+    # Streamlit app layout
+    
+    st.markdown("# Take your 💡product idea to the next level")
+    
+    load_sidebar()
+    demo, arch,  = st.tabs(["Demo", "Architecture"])
+
+    with demo:
+        load_demo()
+    with arch:
+        load_arch()
+
+   
+
+    #if st.session_state.st1_assistant is None or st.session_state.bedrock_assistant is None:
+    st.session_state.st1_assistant, st.session_state.bedrock_assistant = getAgent()
+
+    
 
 @st.cache_resource
 def configure_logging():

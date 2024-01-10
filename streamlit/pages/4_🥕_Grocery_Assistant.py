@@ -226,6 +226,7 @@ def load_demo():
         new_items =  "\n ".join([f"- {item}" for item in st.session_state.gc_shopping_cart])
         st.sidebar.write(new_items)
 
+@st.cache_data
 def load_arch():
     st.image('data/architecture/grocery_assistant_1.png')
     st.markdown(
@@ -259,11 +260,11 @@ def load_arch():
     st.markdown(
         '''
 
-        For giving additional capabilities to GroceryBot such as 'Ordering Products', we need give access to more tools:
+        For giving additional capabilities to GroceryBot such as 'Ordering Products', we needt to give access to more tools:
 
         1. For that we will use a pattern or framework called ReAct (Reasoning & Action) together with Langchain
         2. The ReAct framework could enable large language models to interact with multiple external tools to obtain additional information that results in more accurate and fact-based responses and Langchain provides Off-the-shelf chains, components & abstractions make it easy to get started. 
-        3. We add more tools such as "Add to Cart" API to help ordering products.
+        3. We add more tools to our GroceryBot such as "Add to Cart" API to help ordering products.
 
         '''
     )
