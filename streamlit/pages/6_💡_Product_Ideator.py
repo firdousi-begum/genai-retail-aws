@@ -355,7 +355,7 @@ def load_sidebar():
 
     mode_index = 0
     model_index = 0
-    if selected_generation_type == "SKETCH_ADAPTER":
+    if selected_generation_type == "SKTECH_ADAPTER":
         mode_index = providers.index('Amazon SageMaker JumpStart')
         model_index = models['Amazon SageMaker JumpStart'].index('huggingface-pytorch-inference-2023-11-12-17-36-53-941')
     
@@ -479,6 +479,8 @@ def load_demo():
 
                 #     st.write("**Example image for your product idea**: \n")
                 #     st.image(st.session_state.image)
+def style_figure_text(text):
+    return f'<div style="font-style:italic; font-size: 0.875em; text-align:center">{text}</div>'
 
 @st.cache_data
 def load_arch():
@@ -512,6 +514,10 @@ def load_arch():
 
         '''
     )
+
+    st.markdown(style_figure_text('Figure Ref: <a href="https://huggingface.co/blog/t2i-sdxl-adapters">Hugging Face T2I-Adapter-SDXL Guides</a></br>')
+                , unsafe_allow_html=True)
+    st.image('data/architecture/t2i_adapter.png')
     
 
 def main():
