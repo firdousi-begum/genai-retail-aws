@@ -4,9 +4,7 @@ import streamlit as st
 
 # Load environment variables from .env file during local development
 def loadEnv():
-    if os.path.exists('./.env.local'):
-        #print(f'.env.local exists: {os.path.exists("./.env.local")}')
-        load_dotenv(dotenv_path='./.env.local', override= True)
+    load_dotenv()
         
 
 @st.cache_resource

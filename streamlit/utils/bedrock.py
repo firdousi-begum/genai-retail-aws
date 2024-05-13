@@ -14,6 +14,7 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 import base64
 from PIL import Image
 from io import BytesIO
+from botocore.exceptions import ClientError
 
 # logger = logging.getLogger('retail_genai')
 # logger.setLevel(logging.DEBUG)
@@ -28,6 +29,10 @@ class BedrockAssistant():
         self.logger = logger
         self.token_expiration = None
         self.boto3_bedrock = self.get_bedrock_client(
+            region=self.b_region,
+            endpoint_url = f''
+        )
+        self.boto3_bedrock_agent = self.get_bedrock_agent_client(
             region=self.b_region,
         )
 
@@ -134,6 +139,103 @@ class BedrockAssistant():
         print(bedrock_client._endpoint)
         #print(bedrock_client.list_foundation_models())
         return bedrock_client
+    
+    def get_bedrock_agent_client(self,
+        assumed_role: Optional[str] = None,
+        endpoint_url: Optional[str] = None,
+        region: Optional[str] = 'us-west-2',
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
+        runtime: Optional[bool] = True,
+    ):
+        """Create a boto3 client for Amazon Bedrock, with optional configuration overrides
+
+        Parameters
+        ----------
+        assumed_role :
+            Optional ARN of an AWS IAM role to assume for calling the Bedrock service. If not
+            specified, the current active credentials will be used.
+        endpoint_url :
+            Optional override for the Bedrock service API Endpoint. If setting this, it should usually
+            include the protocol i.e. "https://..."
+        region :
+            Optional name of the AWS Region in which the service should be called (e.g. "us-east-1").
+            If not specified, AWS_REGION or AWS_DEFAULT_REGION environment variable will be used.
+        """
+
+        #print(f'Keys: Access Key ID: {aws_access_key_id}, Secret: {aws_secret_access_key}, Region: {region}, Endpoint: {endpoint_url}')
+
+
+        region = self.b_region if region is None else region
+        endpoint_url = self.b_endpoint 
+        aws_access_key_id = self.key if aws_access_key_id is None else aws_access_key_id
+        aws_secret_access_key = self.secret if aws_secret_access_key is None else aws_secret_access_key 
+        aws_session_token = self.sessionToken if aws_session_token is None else aws_session_token 
+
+        #assumed_role = 'arn:aws:iam::961655544410:role/FibegBedrockAccess'
+
+        if region is None:
+            target_region = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION"))
+        else:
+            target_region = region
+
+        print(f'Keys: Access Key ID: {aws_access_key_id}, Secret: {aws_secret_access_key}, Region: {target_region}, Endpoint: {endpoint_url}')
+
+
+        print(f"Create new client\n  Using region: {target_region}")
+        if aws_access_key_id == '' or aws_secret_access_key == '':
+            session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
+        else:
+            session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
+        client_kwargs = {**session_kwargs}
+
+
+        # profile_name = os.environ.get("AWS_PROFILE")
+        # if profile_name:
+        #     print(f"  Using profile: {profile_name}")
+        #     session_kwargs["profile_name"] = profile_name
+
+        retry_config = Config(
+            region_name=target_region,
+            retries={
+                "max_attempts": 5,
+                "mode": "standard",
+            },
+        )
+        session = boto3.Session(**session_kwargs)
+
+        if assumed_role:
+            print(f"  Using role: {assumed_role}", end='')
+            sts = session.client("sts")
+            response = sts.assume_role(
+                RoleArn=str(assumed_role),
+                RoleSessionName="langchain-llm-1"
+            )
+            print(" ... successful!")
+            client_kwargs["aws_access_key_id"] = response["Credentials"]["AccessKeyId"]
+            client_kwargs["aws_secret_access_key"] = response["Credentials"]["SecretAccessKey"]
+            client_kwargs["aws_session_token"] = response["Credentials"]["SessionToken"]
+
+        # if endpoint_url:
+        #     client_kwargs["endpoint_url"] = endpoint_url
+        
+        if runtime:
+            service_name='bedrock-agent-runtime'
+        else:
+            service_name='bedrock-agent'
+        
+
+        bedrock_client = session.client(
+            service_name=service_name,
+            config=retry_config,
+            **client_kwargs
+        )
+        
+        print("boto3 Bedrock client successfully created!")
+        print(bedrock_client._endpoint)
+        #print(bedrock_client.list_foundation_models())
+        return bedrock_client
 
     def generate_image(self, modelId=None, generationConfig = None, generation_type= None, negative_prompt=''):
         if generationConfig is None or generationConfig == '':
@@ -231,6 +333,45 @@ class BedrockAssistant():
             outputImages = [Image.open(BytesIO(base64.b64decode(base64_image.get("base64")))) for base64_image in response_body.get("artifacts")]
        
         return outputImages
+    
+    def invoke_agent(agent_id, agent_alias_id, session_id, prompt):
+    try:
+        client = boto3.session.Session().client(service_name="bedrock-agent-runtime")
+        # See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent-runtime/client/invoke_agent.html
+        response = client.invoke_agent(
+            agentId=agent_id,
+            agentAliasId=agent_alias_id,
+            enableTrace=True,
+            sessionId=session_id,
+            inputText=prompt,
+        )
+
+        output_text = ""
+        trace = {}
+
+        for event in response.get("completion"):
+            # Combine the chunks to get the output text
+            if "chunk" in event:
+                chunk = event["chunk"]
+                output_text += chunk["bytes"].decode()
+
+            # Extract trace information from all events
+            if "trace" in event:
+                for trace_type in ["preProcessingTrace", "orchestrationTrace", "postProcessingTrace"]:
+                    if trace_type in event["trace"]["trace"]:
+                        if trace_type not in trace:
+                            trace[trace_type] = []
+                        trace[trace_type].append(event["trace"]["trace"][trace_type])
+
+            # TODO: handle citations/references
+
+    except ClientError as e:
+        raise
+
+    return {
+        "output_text": output_text,
+        "trace": trace
+    }
 
 
     def get_text(self, prompt, modelId=None, generationConfig = None):

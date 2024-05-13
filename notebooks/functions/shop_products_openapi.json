@@ -1,0 +1,343 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+      "title": "Shop Products API",
+      "version": "v1",
+      "description": "APIs for retrieving product details by product ID, get list of featured products, and place an order"
+    },
+    "paths": {
+      "/products/id/{productId}": {
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "description": "ID of the product to retrieve",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "8bffb5fb-624f-48a8-a99f-b8e9c64bbe29"
+            }
+          }
+        ],
+        "get": {
+          "tags": [
+            "Products"
+          ],
+          "summary": "Get product by ID",
+          "description": "Returns product information for the specified product ID.",
+          "responses": {
+            "200": {
+              "description": "Successful operation",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/products/featured": {
+        "get": {
+          "tags": [
+            "Products"
+          ],
+          "summary": "Get featured products",
+          "description": "Returns an array of featured products.",
+          "responses": {
+            "200": {
+              "description": "Successful operation",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/orders": {
+        "post": {
+            "tags": [
+                "Orders"
+            ],
+            "summary": "Create a new order",
+            "description": "Creates a new order with the provided details.",
+            "requestBody": {
+                "description": "Details for creating an order and the email of the user placing the order.",
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/OrderRequestBody"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "Successful operation",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Order"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    },
+    "components": {
+      "schemas": {
+        "Order": {
+            "type": "object",
+            "required": [
+              "id",
+              "username",
+              "items",
+              "total",
+              "billing_address",
+              "shipping_address",
+              "delivery_type",
+              "delivery_complete",
+              "channel",
+              "channel_detail"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "1"
+              },
+              "username": {
+                "type": "string",
+                "example": "user1344"
+              },
+              "items": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/OrderProduct"
+                }
+              },
+              "total": {
+                "type": "number",
+                "example": 7.98
+              },
+              "billing_address": {
+                "$ref": "#/components/schemas/Address"
+              },
+              "shipping_address": {
+                "$ref": "#/components/schemas/Address"
+              },
+              "collection_phone": {
+                "type": "string",
+                "example": "+123456780973"
+              },
+              "delivery_type": {
+                "type": "string",
+                "enum": [
+                  "DELIVERY",
+                  "COLLECTION"
+                ]
+              },
+              "delivery_status": {
+                "type": "string"
+              },
+              "delivery_complete": {
+                "type": "boolean",
+                "example": false
+              },
+              "channel": {
+                "type": "string",
+                "example": "WEB",
+                "enum": [
+                  "WEB"
+                ]
+              },
+              "channel_detail": {
+                "$ref": "#/components/schemas/Channel"
+              }
+            }
+          },
+          "OrderRequestBody": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Order"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "nicholas.white@example.com"
+                  }
+                }
+              }
+            ]
+          },
+          "OrderProduct": {
+            "type": "object",
+            "properties": {
+              "product_id": {
+                "type": "string",
+                "example": "a31ad4b3-f9a8-4a9b-a8b3-3034af7bacec"
+              },
+              "product_name": {
+                "type": "string",
+                "example": "Kiwi"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "example": 1
+              },
+              "price": {
+                "type": "number",
+                "example": 3.99
+              }
+            }
+          },
+          "Address": {
+            "type": "object",
+            "properties": {
+              "first_name": {
+                "type": "string",
+                "example": "Nicholas"
+              },
+              "last_name": {
+                "type": "string",
+                "example": "White"
+              },
+              "address1": {
+                "type": "string",
+                "example": "690 Melissa Estate"
+              },
+              "address2": {
+                "type": "string",
+                "example": ""
+              },
+              "country": {
+                "type": "string",
+                "example": "US"
+              },
+              "city": {
+                "type": "string",
+                "example": "East Robertshire"
+              },
+              "state": {
+                "type": "string",
+                "example": "DC"
+              },
+              "zipcode": {
+                "type": "string",
+                "example": "20037"
+              },
+              "default": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          },
+          "Channel": {
+            "type": "object",
+            "properties": {
+              "channel_id": {
+                "type": "integer",
+                "example": 0
+              },
+              "channel_geo": {
+                "type": "string"
+              }
+            }
+          },
+        "ProductRequestBody": {
+          "type": "object",
+          "properties": {
+            "sk": {
+              "type": "string",
+              "example": ""
+            },
+            "name": {
+              "type": "string",
+              "example": "Screwdriver"
+            },
+            "category": {
+              "type": "string",
+              "example": "tools"
+            },
+            "style": {
+              "type": "string",
+              "example": "screwdriver"
+            },
+            "description": {
+              "type": "string",
+              "example": "Essential screwdriver for every craftsperson"
+            },
+            "price": {
+              "type": "number",
+              "example": 3.99
+            },
+            "image": {
+              "type": "string",
+              "example": "http://xxx.cloudfront.net/images/tools/8bffb5fb-624f-48a8-a99f-b8e9c64bbe29.jpg"
+            },
+            "featured": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "example": "true"
+            },
+            "gender_affinity": {
+              "type": "string",
+              "enum": [
+                "M",
+                "F"
+              ],
+              "example": "F"
+            },
+            "current_stock": {
+              "type": "integer",
+              "example": 9
+            }
+          }
+        },
+        "Product": {
+          "allOf": [
+            {
+              "$ref": "#/components/schemas/ProductRequestBody"
+            },
+            {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "8bffb5fb-624f-48a8-a99f-b8e9c64bbe29"
+                },
+                "url": {
+                  "type": "string",
+                  "example": "http://xxx.cloudfront.net/#/product/8bffb5fb-624f-48a8-a99f-b8e9c64bbe29"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
