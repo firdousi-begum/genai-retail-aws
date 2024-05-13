@@ -15,11 +15,12 @@ import aws_cdk.aws_route53_targets as targets
 import aws_cdk.aws_ssm as ssm
 import aws_cdk.aws_logs as logs
 from aws_cdk import aws_iam as iam
-from aws_cdk import core
+from aws_cdk import Stack, Duration
+from constructs import Construct
 
 import configuration as configuration
 
-class GenAiRetailStack(core.Stack):
+class GenAiRetailStack(Stack):
     """
     Provisions a Cognito User Pool with a custom domain as well as
     a VPC with an ALB in front of an ECS service based on Fargate.
@@ -36,13 +37,14 @@ class GenAiRetailStack(core.Stack):
     user_pool_user_info_url: str
     app_name: str
 
-    def __init__(self, scope: core.Construct, id: str,
+    def __init__(self, scope: Construct, id: str,
                  config: configuration.Config,  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         self.config = config
         self.app_name = self.config.app_name
-
+        self.number_of_tasks = 4
+        
         self.os_key_path = self.node.try_get_context("os_key_path") or "/opensearch/"
         self.bedrock_key_path = self.node.try_get_context("bedrock_key_path") or "/bedrock/"
         
@@ -153,9 +155,10 @@ class GenAiRetailStack(core.Stack):
         )
 
         # Create a Certificate for the ALB
-        certificate = acm.Certificate(
+        lb_cert = acm.Certificate(
             self,
             f"{self.app_name}-certificate",
+            certificate_name=f"{self.app_name}-certificate",
             domain_name=self.config.application_dns_name,
             validation=acm.CertificateValidation.from_dns(hosted_zone)
         )
@@ -208,10 +211,12 @@ class GenAiRetailStack(core.Stack):
 
 
         # Define the Docker Image for our container (the CDK will do the build and push for us!)
+        path = os.path.join(os.path.dirname(__file__), "..")
+        print(path)
         docker_image = ecr_assets.DockerImageAsset(
             self,
             f"{self.app_name}",
-            directory=os.path.join(os.path.dirname(__file__), "..")
+            directory=path
         )
 
         # ECS Task Definition
@@ -223,6 +228,12 @@ class GenAiRetailStack(core.Stack):
             execution_role=execution_role,
             task_role=task_role
         )
+
+        # Define environment variables for the container
+        # Define environment variables for the container
+        environment_variables = {
+            "BR_ASSUME_ROLE": f"{task_role.role_arn}"
+        }
 
         container = task_definition.add_container(
             "genai-retail-streamlit-container",
@@ -272,8 +283,18 @@ class GenAiRetailStack(core.Stack):
                         parameter_name=f"{self.bedrock_key_path}region",
                         version=1
                     )
-                )
-            }            
+                ),
+                "API_URL": ecs.Secret.from_ssm_parameter(
+                    ssm.StringParameter.from_secure_string_parameter_attributes(
+                        self, 
+                        "BrApiUrl",
+                        parameter_name=f"{self.bedrock_key_path}api_url",
+                        version=1
+                    )
+                ),
+               
+            },
+            environment= environment_variables
         )
         
         container.add_port_mappings(
@@ -300,6 +321,7 @@ class GenAiRetailStack(core.Stack):
             vpc=vpc,
             description="Security group for the ECS service"
         )
+
         ecs_security_group.add_ingress_rule(
             load_balancer_security_group,
             ec2.Port.tcp(8501),
@@ -311,11 +333,24 @@ class GenAiRetailStack(core.Stack):
             self,
             "Service",
             cluster=cluster,
-            desired_count=1,
+            desired_count=self.number_of_tasks,
             task_definition=task_definition,
-            security_group=load_balancer_security_group,
+            security_groups=[load_balancer_security_group],
             assign_public_ip=True,
             vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets)
+
+        )
+
+        # Setup AutoScaling policy
+        scaling = service.auto_scale_task_count(
+            max_capacity=8
+        )
+
+        scaling.scale_on_cpu_utilization(
+            "CpuScaling",
+            target_utilization_percent=80,
+            scale_in_cooldown=Duration.seconds(60),
+            scale_out_cooldown=Duration.seconds(60),
         )
 
         # Elastic Load Balancer
@@ -331,27 +366,27 @@ class GenAiRetailStack(core.Stack):
         load_balancer = elb.ApplicationLoadBalancer(
             self,
             "LoadBalancer",
+            load_balancer_name=f"{self.app_name}-fargate-lb",
             vpc=vpc,
             internet_facing=True,
             security_group=load_balancer_security_group
         )
 
-        load_balancer.add_listener(
-            "Listener", 
-            port=80,
-            default_action=elb.ListenerAction.forward([target_group])
-        )
+        # http_listener = load_balancer.add_listener(
+        #     "Listener", 
+        #     port=80,
+        #     default_action=elb.ListenerAction.forward([target_group])
+        # )
 
         https_listener = load_balancer.add_listener(
             "HttpsSListener", 
             port=443,
             default_action=elb.ListenerAction.forward([target_group]),
-            certificates=[certificate]
+            certificates=[lb_cert]
         )
 
         https_listener.add_action(
             "authenticate-rule",
-            priority=1000,
             action=elb_actions.AuthenticateCognitoAction(
                 next=elb.ListenerAction.forward(
                     target_groups=[
@@ -361,8 +396,7 @@ class GenAiRetailStack(core.Stack):
                 user_pool=self.user_pool,
                 user_pool_client=self.user_pool_client,
                 user_pool_domain=self.user_pool_custom_domain
-            ),
-            host_header=self.config.application_dns_name
+            )
         )
 
         route53.ARecord(

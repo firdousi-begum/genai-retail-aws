@@ -49,6 +49,7 @@ class Claude(BedrockFoundationModel):
 
     def get_text(self, body: Dict[str, Any]):
         return body["completion"]
+    
 
 @define
 class ClaudeInstantV1(Claude):
@@ -67,3 +68,9 @@ class ClaudeV2(Claude):
 
     def model_id(self):
         return "anthropic.claude-v2"
+
+@define
+class ClaudeV21(Claude):
+
+    def model_id(self):
+        return "anthropic.claude-v2:1"

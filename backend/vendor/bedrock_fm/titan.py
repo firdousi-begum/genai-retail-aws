@@ -8,7 +8,7 @@ from attrs import define
 class TitanLarge(BedrockFoundationModel):
 
     def model_id(self):
-        return "amazon.titan-tg1-large"
+        return "amazon.titan-text-express-v1"
 
     def validate_extra_args(self, extra_args: Dict[str,Any]):
         if len(extra_args.keys()) > 0:

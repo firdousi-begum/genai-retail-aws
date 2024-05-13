@@ -12,16 +12,16 @@ from stability_sdk.api import GenerationRequest, GenerationResponse, TextPrompt
 from PIL import Image
 from typing import Union
 from utils.products import prompts_data_idea, adapter_data
-from utils.studio_style import apply_studio_style
+from utils.studio_style import apply_studio_style, get_background
 from utils.studio_style import keyword_label
-from utils import config
+from utils import studio_style
 import io
 import base64
 import logging
 # End SDXL imports
 
 st.set_page_config(page_title="Product Ideator", page_icon="high_brightness")
-config.get_background()
+get_background()
 
 if "st1_assistant" not in st.session_state:
     st.session_state.st1_assistant = None
@@ -43,7 +43,7 @@ prompts, params = st.sidebar.tabs(["Prompts", "Parameters"])
 
 
 # List of generation types
-generation_types = ["TEXT_IMAGE", "ADAPTER"]
+generation_types = ["TEXT_IMAGE", "SKTECH_ADAPTER"]
 
 providers = ['Amazon Bedrock API', 'Amazon SageMaker JumpStart']
 models = {
@@ -53,11 +53,12 @@ models = {
     
     ],
     "Amazon SageMaker JumpStart": [
-        "sdxl-jumpstart-1-2023-08-30-23-25-11-865"
+        "sdxl-jumpstart-1-2023-08-30-23-25-11-865",
+        "huggingface-pytorch-inference-2023-11-12-17-36-53-941"
     ]
 }
 
-negative_prompt = "ugly, tiling, poorly drawn hands, out of frame, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low quality, bad art, beginner, windy, amateur, distorted"
+negative_prompt = "text, ugly, tiling, poorly drawn hands, out of frame, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low quality, bad art, beginner, windy, amateur, distorted"
 
 
 def encode_image(image_path: str, resize: bool = True, thumbnail : bool = True) -> Union[str, None]:
@@ -149,12 +150,6 @@ def sdxl_decode_and_show(model_response: GenerationResponse) -> None:
         image = artifact.base64
         image_data = base64.b64decode(image.encode())
         image = Image.open(io.BytesIO(image_data))
-        #pil_image = Image.open(image_bytes)
-        #st.session_state.st_images.append({"image": image, "seed": artifact.seed})
-        #st.image(image, caption=f'Seed: {artifact.seed}', use_column_width=True)
-    # image = model_response.artifacts[0].base64
-    # image_data = base64.b64decode(image.encode())
-    # image = Image.open(io.BytesIO(image_data))
 
     return image
 
@@ -166,8 +161,8 @@ def parse_im_response(query_im_response):
     return response_dict['generated_images'], response_dict['prompt']
 
 
-def call_bedrock_titan(prompt_text, max_token_count=1024, temperature=1, top_p=1, stop_sequences=[]):
-    model_id = "amazon.titan-tg1-large"
+def call_bedrock_titan(prompt_text, max_token_count=1024, temperature=0.5, top_p=1, stop_sequences=[]):
+    model_id = "amazon.titan-text-express-v1"
     st.session_state.text_model_id =model_id
 
     body_string = "{\"inputText\":\"" + f"{prompt_text}" +\
@@ -180,17 +175,6 @@ def call_bedrock_titan(prompt_text, max_token_count=1024, temperature=1, top_p=1
     body = bytes(body_string, 'utf-8')
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
 
-
-    # response = bedrock.invoke_model(
-    #     modelId = model_id,
-    #     contentType = "application/json",
-    #     accept = "application/json",
-    #     body = body)
-    # response_lines = response['body'].readlines()
-    # json_str = response_lines[0].decode('utf-8')
-
-    # json_obj = json.loads(json_str)
-    # result_text = json_obj['results'][0]['outputText']
     return result_text
 
 
@@ -206,10 +190,10 @@ def call_bedrock_claude_2(prompt_text, max_tokens_to_sample=1024, temperature=1,
     body = bytes(body_string, 'utf-8')
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+    return result_text
 
-def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
-    model_id = "anthropic.claude-v1"
-    print('hello CLAUDE 1')
+def call_bedrock_claude_instant(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
+    model_id = "anthropic.claude-instant-v1"
     st.session_state.text_model_id = model_id
 
     body = {
@@ -220,10 +204,26 @@ def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1,
     body = bytes(body_string, 'utf-8')
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+    return result_text
+
+def call_bedrock_claude_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
+    model_id = "anthropic.claude-v1"
+    #print('hello CLAUDE 1')
+    st.session_state.text_model_id = model_id
+
+    body = {
+        "prompt": "Human:"+prompt_text+"\n\nAssistant:",
+        "max_tokens_to_sample": max_tokens_to_sample
+    }
+    body_string = json.dumps(body)
+    body = bytes(body_string, 'utf-8')
+
+    result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
+    return result_text
 
 def call_bedrock_claude_2_1(prompt_text, max_tokens_to_sample=1024, temperature=1, top_k=250, top_p=1):
     model_id = "anthropic.claude-v2:1"
-    print('hello CLAUDE 2.1')
+    #print('hello CLAUDE 2.1')
     st.session_state.text_model_id = model_id
 
     body = {
@@ -235,16 +235,7 @@ def call_bedrock_claude_2_1(prompt_text, max_tokens_to_sample=1024, temperature=
 
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
     
-   
-    # response = bedrock.invoke_model(
-    #     modelId = model_id,
-    #     contentType = "application/json",
-    #     accept = "application/json",
-    #     body = body)
-    # response_lines = response['body'].readlines()
-    # json_str = response_lines[0].decode('utf-8')
-    # json_obj = json.loads(json_str)
-    # result_text = json_obj['completion']
+
     return result_text
 
 
@@ -266,23 +257,13 @@ def call_bedrock_jurassic(prompt_text, max_token_count=1024, temperature=1, top_
     
     result_text = st.session_state.bedrock_assistant.get_text_t(body, model_id)
     
-   
-    # response = bedrock.invoke_model(
-    #     modelId = model_id,
-    #     contentType = "application/json",
-    #     accept = "application/json",
-    #     body = body)
-    # response_lines = response['body'].readlines()
-    # json_str = response_lines[0].decode('utf-8')
-    # json_obj = json.loads(json_str)
-    # result_text = json_obj['completions'][0]['data']['text']
     return result_text
 
 
 text_models = {
     "bedrock titan" : call_bedrock_titan,
     "bedrock claude 2" : call_bedrock_claude_2,
-    "bedrock claude instant 1" : call_bedrock_claude_2,
+    "bedrock claude instant 1" : call_bedrock_claude_instant,
     "bedrock claude 2.1" : call_bedrock_claude_2_1,
     "bedrock claude" : call_bedrock_claude_1,
     "bedrock jurassic-2" : call_bedrock_jurassic
@@ -328,6 +309,7 @@ def GetAnswers(query, industry):
         prompt_text = 'Create a product description in '+st.session_state.language+' in 200 words for '+ query.strip("query:")
         func = text_models[st.session_state.text_model.lower()]
         answer = func(prompt_text)
+        #print(f'answer: {answer}')
         answer = answer.replace("$","\$")   
         return answer    
 
@@ -340,44 +322,54 @@ def adaptImage(
     adapter_conditioning_factor: float = 1.0,
     guidance_scale: float = 7.5):
         negative_prompts = "ugly, tiling, poorly drawn hands, out of frame, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low quality, bad art, beginner, windy, amateur, distorted"
-        output = st.session_state.st1_assistant.adapt(img_str,
+        output = st.session_state.st1_assistant.adapt(
+                                                     img_str,
                                                      prompt,
                                                      negative_prompts,
                                                      seed, 
                                                      num_inference_steps, 
                                                      adapter_conditioning_scale,
                                                      adapter_conditioning_factor, 
-                                                     guidance_scale   )
+                                                     guidance_scale,
+                                                     endpoint_name = st.session_state.modelId)
         output.save('adapted_image.png')
         return output                  
 
+@st.cache_resource(ttl=1800)
 def getAgent():
     modelId = st.session_state.modelId
     assistant = stability.StabilityAssistant(models['Amazon SageMaker JumpStart'][0])
     b_assistant = bedrock.BedrockAssistant(modelId,st.session_state.logger)
     return assistant, b_assistant
 
-def load_sidebar():
-    prompts.header("Product ideator")
-    selected_generation_type = prompts.selectbox("Select Generation Type", generation_types, key="generation_type" )
-
-    mode_type = prompts.selectbox("Select Image Generator", providers, key="mode")
-    modelIds = [item for item in models[mode_type]]
-    model = prompts.selectbox("Select Image Model", modelIds, key="modelId")
-
-    keywords = [f'Model: {st.session_state.modelId}',f'{st.session_state.mode}']
+def load_keywords():
+    keywords = [f'Model: {st.session_state.modelId}, {st.session_state.text_model}',f'{st.session_state.mode}']
     formatted_labels = [keyword_label(keyword) for keyword in keywords]
     st.write(' '.join(formatted_labels), unsafe_allow_html=True)
-    apply_studio_style()
+    apply_studio_style()       
+  
+
+def load_sidebar():
+    prompts.header("Product ideator")
+    selected_generation_type = prompts.selectbox("Select Generation Type", generation_types, key="generation_type")
+
+    mode_index = 0
+    model_index = 0
+    if selected_generation_type == "SKTECH_ADAPTER":
+        mode_index = providers.index('Amazon SageMaker JumpStart')
+        model_index = models['Amazon SageMaker JumpStart'].index('huggingface-pytorch-inference-2023-11-12-17-36-53-941')
+    
+    mode_type = prompts.selectbox("Select Image Generator", providers, index=mode_index, key="mode", on_change=getAgent.clear )
+    modelIds = [item for item in models[mode_type]]
+    model = prompts.selectbox("Select Image Model", modelIds, index =model_index, key="modelId", on_change=getAgent.clear)
 
     prompts.markdown("### Make your pick")
     idea = ''
     industry = ''
     industry = prompts.selectbox(
         'Select an industry',
-        ('Retail', 'Fashion', 'Manufacturing', 'Technology', 'Transport'), key='industry')
+       list(prompts_data_idea.keys()), key='industry')
     if st.session_state.generation_type == "TEXT_IMAGE":
-        st.write("**Instructions:** \n - Type a product idea prompt \n - You will see an image, a product description, and press release generated for your product idea")
 
         product_idea =''
         if industry and industry != "NONE":
@@ -385,11 +377,15 @@ def load_sidebar():
             product_idea = prompts.selectbox("Select an example Product", prompt_titles, key="prompt_title")
 
 
-        fms = ['Bedrock Claude Instant 1','Bedrock Claude 2.1','Bedrock Claude','Bedrock Claude 2','Bedrock Jurassic-2']
-        default_model = fms.index('Bedrock Claude 2.1')
+        fms = ['Bedrock Titan','Bedrock Claude Instant 1','Bedrock Claude 2.1','Bedrock Claude','Bedrock Claude 2','Bedrock Jurassic-2']
+        default_model = fms.index('Bedrock Titan')
         text_model = prompts.selectbox(
             'Select a Text FM',
-            options=fms, index=default_model, key="text_model")
+            options=fms, index=default_model, key="text_model", on_change=getAgent.clear)
+        
+        load_keywords()
+
+        st.write("**Instructions:** \n - Type a product idea prompt \n - You will see an image, a product description, and press release generated for your product idea")
         
         for prompt in prompts_data_idea[industry]:
             if prompt["Prompt Title"] == product_idea:
@@ -404,7 +400,7 @@ def load_sidebar():
             options=languages, index=default_lang_ix, key ="language")
         key_phrases = ''
 
-    elif st.session_state.generation_type == "ADAPTER":
+    elif st.session_state.generation_type == "SKTECH_ADAPTER":
         st.write("**Instructions:** \n - Upload your image \n - Type a prompt to adapt it to new color or design, you will see your idea come to life.")
 
         product_idea =''
@@ -432,29 +428,14 @@ def load_sidebar():
 
         input_text = st.text_area('**What is your product idea?**', key='prod_text', value=idea)
 
-
-
-    
-def main():
-    # Streamlit app layout
-    
-    st.markdown("# Take your product idea to the next level")
-
-    load_sidebar()
-                    
-  
-    if st.session_state.st1_assistant is None or st.session_state.bedrock_assistant is None:
-        st.session_state.st1_assistant, st.session_state.bedrock_assistant = getAgent()
-
-  
-
+def load_demo():
     # Generate button
     if st.button("Ideate"):
         st.session_state.image=''
         if st.session_state.prod_text != '' and st.session_state.generation_type == "TEXT_IMAGE":
             with st.spinner("Generating Product Idea..."):
                 result = GetAnswers(st.session_state.prod_text, st.session_state.industry)
-
+            #print(f'description: {result}')  
             result = result.replace("$","\$")
             tab1, tab2, tab3, tab4 = st.tabs(["Product description", "Internal memo", "Press release", "Social Media Ad"])
             #c1, c2 = st.columns(2)
@@ -466,6 +447,7 @@ def main():
                 prompt_text = 'Generate an internal memo announcing the launch decision in '+st.session_state.language+' for '+ st.session_state.prod_text.strip("query:")
                 func = text_models[st.session_state.text_model.lower()]
                 answer = func(prompt_text)
+                #print(f'memo: {result}')  
                 answer = answer.replace("$","\$") 
                 st.write(answer)
             with tab3:
@@ -483,7 +465,7 @@ def main():
                 answer = answer.replace("$","\$") 
                 st.write(answer)
                 #st.balloons()       
-        elif st.session_state.generation_type == "ADAPTER":
+        elif st.session_state.generation_type == "SKTECH_ADAPTER":
             with st.spinner("Generating Product Idea..."):
                 st.image(
                     adaptImage( st.session_state.init_image,st.session_state.prod_text)
@@ -497,9 +479,66 @@ def main():
 
                 #     st.write("**Example image for your product idea**: \n")
                 #     st.image(st.session_state.image)
-       
-            
+def style_figure_text(text):
+    return f'<div style="font-style:italic; font-size: 0.875em; text-align:center">{text}</div>'
 
+@st.cache_data
+def load_arch():
+    st.markdown("#### Product Ideation: TEXT_IMAGE")
+    st.image('data/architecture/product_ideation_arch_1.png')
+    st.markdown(
+        '''
+
+        1. Prompt specifies description of image you want to generate
+        2. For generating image, you can either select:\n\n
+            a. Amazon Bedrock API with the IMAGE model as [Stable Diffusion XL 1.0](https://stability.ai/stablediffusion) or [Amazon Titan Image Generator](https://docs.aws.amazon.com/bedrock/latest/userguide/titan-image-models.html)\n\n
+            b. Amazon SageMaker endpoint with hosted [Stable Diffusion XL 1.0](https://stability.ai/stablediffusion) model
+        3. The selected IMAGE model is invoked to generate high quality image output\n\n 
+            Amazon Titan Image Generator also adds invisible watermark to the output image for responsible AI.
+        4. Additionally, Amazon Bedrock API with the right LLM model is invoked to generate Product Description, Internal Memo, Press Release & Social Media campaign
+       
+        '''
+    )
+
+    st.markdown("#### Product Ideation: SKETCH_ADAPTER")
+    st.image('data/architecture/product_ideation_arch_2.png')
+    st.markdown(
+        '''
+        For visualizing Sketch to 3D image, T2I-Adapter is used together with Stable Diffusion SDXL 1.0 base model.
+        [T2I-Adapter](https://huggingface.co/blog/t2i-sdxl-adapters) is a lightweight adapter model that provides an additional conditioning input image (line art, canny, sketch, depth, pose) to better control image generation\n\n
+
+        1. The Input Image is a Sketch of product prototype that you want to visualize in different forms.\n\n
+            The traditional ideation process have its limits. Visualizing products in various materials, colors, and configurations was challenging. This manual approach also came with costs associated with extended development times
+        2. [Stable Diffusion XL 1.0](https://stability.ai/stablediffusion) model together with [Hugging Face T2I-ADAPTER](https://huggingface.co/blog/t2i-sdxl-adapters) with "Sketch Guided" conditioning is hosted on Amazon SageMaker
+        3. Amazon SageMaker endpoint is invoked to generate high quality image output
+
+        '''
+    )
+
+    st.markdown(style_figure_text('Figure Ref: <a href="https://huggingface.co/blog/t2i-sdxl-adapters">Hugging Face T2I-Adapter-SDXL Guides</a></br>')
+                , unsafe_allow_html=True)
+    st.image('data/architecture/t2i_adapter.png')
+    
+
+def main():
+    # Streamlit app layout
+    
+    st.markdown("# Take your 💡product idea to the next level")
+    
+    load_sidebar()
+    demo, arch,  = st.tabs(["Demo", "Architecture"])
+
+    with demo:
+        load_demo()
+    with arch:
+        load_arch()
+
+   
+
+    #if st.session_state.st1_assistant is None or st.session_state.bedrock_assistant is None:
+    st.session_state.st1_assistant, st.session_state.bedrock_assistant = getAgent()
+
+    
 
 @st.cache_resource
 def configure_logging():

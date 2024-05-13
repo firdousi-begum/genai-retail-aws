@@ -1,10 +1,10 @@
 import streamlit as st
 from langchain import PromptTemplate
-from utils.studio_style import apply_studio_style
+from utils.studio_style import apply_studio_style, get_background
 from utils.studio_style import keyword_label, sentiment_label
 from utils import langchain
-from utils import bedrock
-from utils import config
+from utils import bedrock, api
+from utils import studio_style
 from datetime import datetime
 import pandas as pd
 import json
@@ -15,7 +15,7 @@ st.set_page_config(
     page_icon="🛒",
 )
 
-config.get_background()
+get_background()
 
 # Read the CSV file
 @st.cache_data
@@ -23,25 +23,28 @@ def load_data():
     data = pd.read_csv("./data/amazon_vfl_reviews.csv")
     return data
     
-def display_product_review_summary(review):
+def display_product_review_summary(review, isText = False):
     
     with st.expander("See output"):
         st.write(review)
     
-    # Claude v2.1 always returns text with json
-    try:
-        # Find the index of the first '{' and the last '}'
-        start_idx = review.index('{')
-        end_idx = review.rindex('}') + 1
+    json_data = review
+    # substring if the output is text
+    if isText:
+        # Claude v2.1 always returns text with json
+        try:
+            # Find the index of the first '{' and the last '}'
+            start_idx = review.index('{')
+            end_idx = review.rindex('}') + 1
 
-        # Extract the JSON string
-        json_string = review[start_idx:end_idx]
-        
-        # Load JSON data
-        json_data = json.loads(json_string)
-    except json.JSONDecodeError:
-        print("Error decoding JSON.")
-        return 'Cannot summarize review'
+            # Extract the JSON string
+            json_string = review[start_idx:end_idx]
+            
+            # Load JSON data
+            json_data = json.loads(json_string)
+        except json.JSONDecodeError:
+            print("Error decoding JSON.")
+            return 'Cannot summarize review'
 
     #json_data = json.loads(review)
 
@@ -70,21 +73,16 @@ def generate_review_summary (product_reviews, product_name):
     if product_reviews is None:
         return
     
-    product_reviews = f"""Product Name:{product_name}\n
+    reviews = f"""Product Name:{product_name}\n
     Reviews: {product_reviews}
     """
-    map_prompt = """
-    Write a concise summary of the following product reviews:
-    "{text}"
-    CONCISE SUMMARY:
-    """
-    map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
+    system_prompt = "You are a product analyst that summarizes the product reviews."
 
     combine_prompt = """
     Generate summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
     ```{text}```
 
-    Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the review summary, 
+    Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the generated summary, 
     and generate maximum 5 most important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
     The output should ALWAYS be valid JSON document with text inside the 'outputFormat' below, do NOT add any text in the output before JSON . 
     Don't include any preamble.
@@ -100,26 +98,19 @@ def generate_review_summary (product_reviews, product_name):
         }}
     </outputFormat>
 
-
     """
-    combine_prompt_template = PromptTemplate(template=combine_prompt, input_variables=["text"])
-    #modelId = 'amazon.titan-tg1-large'
-    # inference_config = {
-    #                         "maxTokenCount":3072,
-    #                         "stopSequences":[],
-    #                         "temperature":0,
-    #                         "topP":0.9
-    #                         }
-    #modelId = 'anthropic.claude-v1'
     inference_config = {
                                 "max_tokens_to_sample":4096,
-                                "temperature":1,
+                                "temperature":0.1,
                                 "top_k":250,
                                 "top_p":0.5,
                                 "stop_sequences":[]
                         }
     #print(f'Reviews:{product_reviews}')
-    summary = langchain.summarize_long_text(product_reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, map_prompt, combine_prompt)
+    #summary = langchain.summarize_long_text(reviews, st.session_state.sm_assistant.boto3_bedrock, modelId, inference_config, system_prompt, combine_prompt)
+    #display_product_review_summary(isText= True)
+    summary = st.session_state.api.summarize_reviews(product_name, product_reviews)
+    #print(summary)
     display_product_review_summary(summary)
     return summary
 
@@ -160,7 +151,7 @@ def load_demo():
                     SENTIMENT:
                     """
                     product_reviews = "\n".join(reviews_df['review'])
-                    product_reviews = combine_prompt + product_reviews
+                    #product_reviews = combine_prompt + product_reviews
                     summary = generate_review_summary(product_reviews, selected_product)
 
             st.markdown("#### Product Reviews")
@@ -235,9 +226,10 @@ def configure_logging():
     return logger
 
 if __name__ == "__main__":
-    st.title("Summarize Product Reviews")
+    st.title("⭐Summarize Product Reviews")
     #modelId = 'amazon.titan-tg1-xlarge'
-    modelId = 'anthropic.claude-v2:1'
+    #modelId = 'anthropic.claude-v2:1'
+    modelId = 'anthropic.claude-v2'
     #modelId = 'anthropic.claude-instant-v1'
     data = load_data()
 
@@ -271,4 +263,7 @@ if __name__ == "__main__":
     
     if "sm_assistant" not in st.session_state:
         st.session_state.sm_assistant = bedrock.BedrockAssistant(modelId, st.session_state.logger)
+
+    if "api" not in st.session_state:
+        st.session_state.api = api.GenAIRetailAPI(st.session_state.logger)
     main()

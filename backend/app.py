@@ -2,139 +2,198 @@
 # SPDX-License-Identifier: MIT
 
 from chalice import Chalice, BadRequestError
-from bs4 import BeautifulSoup
-import requests
-from bedrock_fm import ClaudeInstantV1, TitanLarge
-import botocore
+from bedrock_fm import ClaudeV2, BedrockService, ClaudeV21, from_model_id
 import boto3
-import backoff
 import logging
-import traceback
-from utils import langchain
-import json
+import backoff
+from chalicelib.shopping_agent import ShoppingAssistant
+from chalicelib.summarize import SummarizeAssistant
 from urllib.parse import urlparse, parse_qs
+import json
+import langchain
 logger = logging.getLogger()
 
-app = Chalice(app_name='retail-genai')
+app = Chalice(app_name='genai-retail')
 session = boto3.Session(region_name='us-west-2')
 bedrock = session.client('bedrock-runtime')
-ci = ClaudeInstantV1(client=bedrock, token_count=2000, temperature=0.2)
-titan = TitanLarge(client=bedrock, token_count=4096, temperature=0.2)
+bedrock_service = session.client('bedrock')
+cd2 = ClaudeV2(client=bedrock, token_count=4096, temperature=0, top_p=0.9)
+cd21 = ClaudeV21(client=bedrock, token_count=4096, temperature=0, top_p=0.9)
+br_service = BedrockService(client=bedrock_service)
+assistant = ShoppingAssistant(client = bedrock, logger= logger)
+summarize = SummarizeAssistant(client=bedrock, logger=logger)
+
 
 @app.route('/')
 def index():
+    print(app.current_request.to_dict())
     return {'message': 'HELLO'}
 
-
+@app.route('/bedrock/models', methods=['GET'])
 @backoff.on_exception(backoff.expo, bedrock.exceptions.ThrottlingException)
-def get_ingredients_from_list(ingredient_list):
-    return ci.generate("""From the following ingredient list in swedish extract the swedish name of the ingredient, the quantity and the unit of measure for each item. 
-Create a JSON document containing: the simple ingredient name in swedish, the quantity and the unit of measure. Use the fields: ingredient, quantity, unit. 
-Quantity must be a number. Ingredients are nouns only. The answer contains only the JSON document.
+def getBedrockModels():
+    # Access query parameters from the event object
+    provider = app.current_request.query_params.get('provider')
+    customization_type = app.current_request.query_params.get('customization_type')
+    output_modality = app.current_request.query_params.get('output_modality')
+    inference_type = app.current_request.query_params.get('inference_type')
 
-{}""".format("\n".join([i for i in ingredient_list if i.upper() != i])))[0].strip()
+    try:
+        models = br_service.get_model_list(
+            provider=provider,
+            customizationType=customization_type,
+            outputModality=output_modality,
+            inferenceType=inference_type
+        )
 
+        return models
+    except Exception as e:
+        return str(e)
+
+@app.route('/products/qa')
+def product_QA():
+    #langchain.debug=True
+    logger.info('Before')
+    print('Before')
+    # Access query parameters from the event object
+    prompt = app.current_request.query_params.get('prompt')
+    print(prompt)
+    logger.info(prompt)
+    try:
+        print('got assistant')
+        #answer = assistant.product_qa({"query": prompt})
+        answer = assistant.product_qa_chain({"question": prompt})
+
+
+        return answer
+    except Exception as e:
+        return str(e)
+    
+@app.route('/products/chat')
+def product_chat():
+    langchain.debug=True
+    logger.info('Before')
+    print('Before')
+    # Access query parameters from the event object
+    prompt = app.current_request.query_params.get('prompt')
+    session_id = app.current_request.query_params.get('sid')
+    print(prompt)
+    logger.info(prompt)
+    try:
+        print('got assistant chat')
+        #answer = assistant.product_qa({"query": prompt})
+        answer = assistant.get_product_chat(query=prompt, session_id=session_id)
+
+        return answer
+    except Exception as e:
+        print('Error')
+        print(str(e))
+        return str(e)
+    
+@app.route('/products/chat/messages')
+def product_chat_messages():
+    langchain.debug=True
+    logger.info('Before')
+    print('Before')
+    session_id = app.current_request.query_params.get('sid')
+    try:
+        print('got assistant chat messages')
+        #answer = assistant.product_qa({"query": prompt})
+        messages = assistant.mongo_mem.get_messages( session_id=session_id)
+        print(messages)
+        return messages
+    except Exception as e:
+        print('Error')
+        print(str(e))
+        return str(e)
+
+@app.route('/generate', methods=['POST'])
 @backoff.on_exception(backoff.expo, bedrock.exceptions.ThrottlingException)
-def get_product_description(product_name, product_features, persona):
-    persona_prompt = ''
-    if persona is not None and persona != 'None':
-        print(f'persona: {persona}')
-        persona_prompt = f" and personalize it to persona charateristics: {persona}"
+def generateText():
 
-    # create the prompt
-    prompt_data = f"""Product: {product_name} \
-    Features: {product_features} \
-    Create a detailed product description for the product listed above, {persona_prompt} \
-    , the product description must \
-    use at least two of the listed features.\
-    """
-    
-    return ci.generate(prompt_data, temperature = 0.9,top_p=0.9 )[0].strip()
+    # Access the current request object
+    current_request = app.current_request
 
-def generate_review_summary (product_reviews, product_name):
+    # Read body parameters from the POST request
+    body_params = current_request.json_body  # Assumes the body contains JSON data
+
+    # Access specific parameters
+    prompt = body_params.get('prompt')
+
+    try:
+        output = cd21.generate(prompt)
+
+        return output
+    except Exception as e:
+        return str(e)
     
-    if product_reviews is None:
-        return
+@app.route('/summarize/reviews', methods=['POST'])
+@backoff.on_exception(backoff.expo, bedrock.exceptions.ThrottlingException)
+def summarizeReviews():
+
+    print('summarize api')
+    # Access the current request object
+    current_request = app.current_request
+
+    # Read body parameters from the POST request
+    body_params = current_request.json_body  # Assumes the body contains JSON data
     
-    product_reviews = f"""Product Name:{product_name}\n
+    # Access specific parameters
+    product_reviews = body_params.get('product_reviews')
+    product_name = body_params.get('product_name')
+
+    reviews = f"""Product Name:{product_name}\n
     Reviews: {product_reviews}
     """
-    map_prompt = """
-    Write a concise summary of the following product reviews:
-    "{text}"
-    CONCISE SUMMARY:
-    """
-    map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
 
+    system_prompt = "You are a product analyst that summarizes the product reviews."
+    
     combine_prompt = """
-    Write a concise summary of the following product reviews for the product delimited by triple backquotes. 
+    Generate summary about the reviews for [Product Name] based on Product reviews delimited by triple backquotes.
     ```{text}```
 
-    Return overall sentiment of the product reviews in separate section 'SENTIMENT' after thie concise summary.
-    Return important keywords from the product reviews in separate section 'KEYWORDS' after the 'SENTIMENT'.
-    To generate concise summary, you MUST use below format:
-    ```
-    SUMMARY: Concise summary of the product reviews \n\n
-    <b>SENTIMENT:</b> overall sentiment for the summary \n\n
-    <b>KEYWORDS:</b> extract important keywords from the summary
-    ```
-
+    Also return overall_sentiment as 'POSITIVE', 'NEGATIVE' or 'MIXED' based on the generated summary, 
+    and generate maximum 5 most important keywords for the the given product reviews and based on reviews generate sentiment for each keyword. 
+    The output should ALWAYS be valid JSON document with text inside the 'outputFormat' below, do NOT add any text in the output before JSON . 
+    Don't include any preamble.
+    <outputFormat>
+        {{
+            "product_reviews_summary": "Maximum 200 words summary.",
+            "overall_sentiment": "POSITIVE or NEGATIVE or MIXED",
+            "keywords_highlight": [
+                {{"keyword": "Quality", "sentiment": "POSITIVE"}},
+                {{"keyword": "Affordability", "sentiment": "NEGATIVE"}},
+                {{"keyword": "Customer Service", "sentiment": "MIXED"}}
+            ]
+        }}
+    </outputFormat>
     """
-    combine_prompt_template = PromptTemplate(template=combine_prompt, input_variables=["text"])
-    #modelId = 'amazon.titan-tg1-large'
-    inference_config_titan = {
-                            "maxTokenCount":3072,
-                            "stopSequences":[],
-                            "temperature":0,
-                            "topP":0.9
-                            }
 
-    #print(f'Reviews:{product_reviews}')
-    summary = langchain.summarize_long_text(product_reviews, modelId, inference_config_titan, map_prompt, combine_prompt)
-    return summary
+    try:
+        output = summarize.summarize_long_text(reviews, system_prompt, combine_prompt)
+        print(output)
 
-@app.route('/description',methods=['POST'],content_types=['application/json'], cors=True)
-def generate_product_description():
-    print(boto3.__version__)
-    print(botocore.__version__)
-    try: 
-        #print(app.current_request.to_dict())
-        request = app.current_request.json_body 
-        print(request)
-        description = ''
+        # Claude v2.1 always returns text with json
+
+        # Find the index of the first '{' and the last '}'
+        start_idx = output.index('{')
+        end_idx = output.rindex('}') + 1
+
+        # Extract the JSON string
+        json_string = output[start_idx:end_idx]
+
+        print(json_string)
         
-        if request:
-            product_name = request["productName"]
-            product_features = request["features"]
-            persona = request["persona"]
-            description = get_product_description(product_name, product_features, persona)
+        # Load JSON data
+        json_data = json.loads(json_string)
 
-            #print(f"Description geenrated: {description}")
-        
-        return description
-    except Exception as ex:
-        print(traceback.format_exc(ex))
-        raise BadRequestError(f"Error {ex}")
+        return json_data
     
-@app.route('/description',methods=['POST'],content_types=['application/json'], cors=True)
-def generate_product_description():
-    print(boto3.__version__)
-    print(botocore.__version__)
-    try: 
-        #print(app.current_request.to_dict())
-        request = app.current_request.json_body 
-        print(request)
-        description = ''
-        
-        if request:
-            product_name = request["productName"]
-            product_features = request["features"]
-            persona = request["persona"]
-            description = get_product_description(product_name, product_features, persona)
+    except json.JSONDecodeError as e:
+        print("Error decoding JSON.", e)
+        return 'Cannot summarize review'
+    except Exception as e:
+        print("Error decoding JSON.", e)
+        return str(e)
 
-            #print(f"Description geenrated: {description}")
-        
-        return description
-    except Exception as ex:
-        print(traceback.format_exc(ex))
-        raise BadRequestError(f"Error {ex}")
+

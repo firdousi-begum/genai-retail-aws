@@ -62,12 +62,11 @@ class StabilityAssistant():
 
 
         print(f"Create new client\n  Using region: {target_region}")
-        session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
+        if aws_access_key_id == '' or aws_secret_access_key == '':
+            session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
+        else:
+            session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
         client_kwargs = {**session_kwargs}
-
-        # session = boto3.Session(region_name='us-west-2')
-        # bedrock_client = session.client( service_name='bedrock-runtime')
-
         # profile_name = os.environ.get("AWS_PROFILE")
         # if profile_name:
         #     print(f"  Using profile: {profile_name}")
@@ -178,9 +177,10 @@ class StabilityAssistant():
             num_inference_steps: int = 30,
             adapter_conditioning_scale: float = 0.9,
             adapter_conditioning_factor: float = 1.0,
-            guidance_scale: float = 7.5):
+            guidance_scale: float = 7.5,
+            endpoint_name: str= ''):
         
-        endpoint_name = 'huggingface-pytorch-inference-2023-11-12-17-36-53-941'
+        #endpoint_name = 'huggingface-pytorch-inference-2023-11-12-17-36-53-941'
         #sm_client, sm_session= self.get_sagemaker_client()
         response_model = self.sm_client.invoke_endpoint(
         EndpointName=endpoint_name,
