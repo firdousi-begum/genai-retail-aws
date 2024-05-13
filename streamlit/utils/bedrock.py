@@ -11,6 +11,7 @@ from utils import config
 from langchain.llms.bedrock import Bedrock
 from typing import Optional, List, Any
 from langchain.callbacks.manager import CallbackManagerForLLMRun
+import botocore.exceptions
 import base64
 from PIL import Image
 from io import BytesIO
@@ -22,8 +23,8 @@ from botocore.exceptions import ClientError
 
 
 class BedrockAssistant():
-    def __init__(self, modelId, logger = None):
-        self.b_endpoint, self.b_region = config.getBedrockConfig()
+    def __init__(self, modelId=None, logger = None):
+        self.b_endpoint, self.b_region, self.b_assume_role = config.getBedrockConfig()
         self.key, self.secret, self.region, self.sessionToken = config.getEnvCredentials()
         self.modelId = modelId
         self.logger = logger
@@ -77,6 +78,9 @@ class BedrockAssistant():
             target_region = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION"))
         else:
             target_region = region
+        
+        # if self.b_assume_role is not None:
+        #     assumed_role = self.b_assume_role
 
         print(f'Keys: Access Key ID: {aws_access_key_id}, Secret: {aws_secret_access_key}, Region: {target_region}, Endpoint: {endpoint_url}')
 
@@ -84,8 +88,10 @@ class BedrockAssistant():
         print(f"Create new client\n  Using region: {target_region}")
         if aws_access_key_id == '' or aws_secret_access_key == '':
             session_kwargs = {"region_name": target_region,  "aws_session_token": aws_session_token}
+            #session_kwargs = {"region_name": target_region}
         else:
             session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
+            #session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key}
         client_kwargs = {**session_kwargs}
 
 
@@ -122,8 +128,6 @@ class BedrockAssistant():
             service_name='bedrock-runtime'
         else:
             service_name='bedrock'
-
-        
 
         bedrock_client = session.client(
             service_name=service_name,
@@ -237,6 +241,22 @@ class BedrockAssistant():
         #print(bedrock_client.list_foundation_models())
         return bedrock_client
 
+    def invoke_model(self, body, modelId, accept, contentType):
+        response = ''
+        try:
+            response = self.boto3_bedrock.invoke_model(body=body, modelId=modelId, accept=accept, contentType=contentType)
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'ExpiredTokenException':
+                # Handle the expired token exception by re-initializing the client
+                self.boto3_bedrock = self.get_bedrock_client(region=self.b_region)
+                # Retry the API call
+                response = self.boto3_bedrock.invoke_model(body=body, modelId=modelId, accept=accept, contentType=contentType)
+            else:
+                # Handle other ClientErrors as needed
+                print(f"Error: {e}")
+        return response
+        
+
     def generate_image(self, modelId=None, generationConfig = None, generation_type= None, negative_prompt=''):
         if generationConfig is None or generationConfig == '':
             return
@@ -276,7 +296,7 @@ class BedrockAssistant():
                     "seed": generationConfig.seed             # Range: 0 to 214783647
                 }
             })
-            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
+            response = self.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
             response_body = json.loads(response.get("body").read())
             outputImages = [Image.open(BytesIO(base64.b64decode(base64_image))) for base64_image in response_body.get("images")]
             #outputImages = response_body.get("images")
@@ -328,7 +348,7 @@ class BedrockAssistant():
             #print(config)
 
             body = json.dumps(config) 
-            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId)
+            response = self.invoke_model(body=body, modelId= modelId, contentType= contentType, accept=accept)
             response_body = json.loads(response.get("body").read())
             outputImages = [Image.open(BytesIO(base64.b64decode(base64_image.get("base64")))) for base64_image in response_body.get("artifacts")]
        
@@ -383,8 +403,6 @@ class BedrockAssistant():
 
         self.logger.info(f'In Bedrock GetText with region {self.b_region}')
 
-
-
         accept = 'application/json'
         contentType = 'application/json'
         if generationConfig is None:
@@ -403,7 +421,7 @@ class BedrockAssistant():
                     {"prompt": f"Human: {prompt}\n\nAssistant:"}
                 )
             body = json.dumps(config) 
-            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
+            response = self.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
             response_body = json.loads(response.get('body').read())
             outputText = response_body['completion']
         elif modelId == "ai21.j2-jumbo-instruct":
@@ -413,7 +431,7 @@ class BedrockAssistant():
             body = json.dumps(
               config
             ) 
-            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
+            response = self.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
             response_body = json.loads(response.get('body').read())
             # response_lines = response['body'].readlines()
             # json_str = response_lines[0].decode('utf-8')
@@ -427,7 +445,7 @@ class BedrockAssistant():
             body = json.dumps(
               config
             ) 
-            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
+            response = self.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
             response_body = json.loads(response.get('body').read().decode('utf-8'))
             outputText = response_body['generation'].strip()
         else:
@@ -437,7 +455,7 @@ class BedrockAssistant():
             body = json.dumps(
                config
             ) 
-            response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
+            response = self.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
             response_body = json.loads(response.get('body').read())
             outputText = response_body.get('results')[0].get('outputText')
         return outputText
@@ -466,20 +484,22 @@ class BedrockAssistant():
         #     "inputText": prompt, 
         #     "textGenerationConfig": generationConfig
         #     }) 
-        response = self.boto3_bedrock.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
+        response = self.invoke_model(body=body, modelId= modelId, accept=accept, contentType=contentType)
         response_body = json.loads(response.get('body').read())
         #print(f'Claude response: {response_body}')
-
+        
         if "claude" in modelId:
             outputText = response_body['completion']
-        elif modelId == "ai21.j2-jumbo-instruct":
-            # response_lines = response['body'].readlines()
-            # json_str = response_lines[0].decode('utf-8')
-            # json_obj = json.loads(json_str)
-            # outputText = json_obj['completions'][0]['data']['text']
+            #print(f'claude: {outputText}')
+        elif "ai21" in modelId:
             outputText = response_body['completions'][0]['data']['text']
+            #print(f'ai21: {outputText}')
+        elif "meta" in modelId:
+            outputText = response_body['generation'].strip()
+            #print(f'meta: {outputText}')
         else:
             outputText = response_body.get('results')[0].get('outputText')
+            #print(f'titan: {outputText}')
 
         return outputText
 

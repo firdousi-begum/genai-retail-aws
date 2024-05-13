@@ -1,6 +1,7 @@
 # utils/studio_style.py
-
+import base64
 import streamlit as st
+import base64
 
 def keyword_label(text):
     if 'Model' in text:
@@ -16,7 +17,7 @@ def sentiment_label(sentiment, text):
         return f'<div class="sentiment-label-positive">{text}</div>'
     elif sentiment_lower == "negative":
         return f'<div class="sentiment-label-negative">{text}</div>'
-    elif sentiment_lower == "mixed" or sentiment_lower == "neutral":
+    elif sentiment_lower == "mixed" or sentiment_lower == "neutral" or 'slightly' in sentiment_lower:
         return f'<div class="sentiment-label-mixed">{text}</div>'
     else:
         return f'<div class="sentiment-label-positive">{text}</div>'  # Default color if sentiment is not recognized
@@ -184,7 +185,94 @@ def apply_studio_style():
                 border-radius: 5px;
                 box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             }
+            
+            [data-testid="stChatInput"] {
+                box-shadow: -5px -10px 10px rgba(0, 0, 0,0.5);
+                background-color: #230930;
+            }
+
         </style>
         """,
         unsafe_allow_html=True,
     )
+
+def get_img_as_base64(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+
+@st.cache_data  
+def get_background():
+    bg_img = get_img_as_base64("images/bg.png")
+    logo = get_img_as_base64("images/logo.png")
+
+    page_bg_img = f"""
+    <style>
+    .imglogo {{
+    width: 100%;
+    height: auto; 
+    content:
+    }}
+    .stApp {{
+    background-image: url("data:image/png;base64,{bg_img}");
+    background-size: cover;
+    }}
+
+    [data-testid="stHeader"] {{
+    background-color: rgba(0, 0, 0, 0);
+    }}
+
+   [data-testid="stHeader"]{{
+    # background-image: url("data:image/png;base64,{logo}");
+    # background-repeat: no-repeat;
+    # background-size: 100% 100%;  
+    # background-position: 50% 0%;
+    background: url("data:image/png;base64,{logo}") 6% center/138px no-repeat, linear-gradient(to right, rgb(36,34,67) 40%,rgb(76,19,138) 70%, rgb(205,54,117));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }}
+
+    [data-testid="stSidebar"] {{
+    #background-color: rgba(0, 0, 0, 0);
+    # background-image: url("data:image/png;base64,{logo}"), url("data:image/png;base64,{bg_img}");
+    # background-position: center 30px, center center;
+    # background-repeat: no-repeat, no-repeat;
+    # background-image: url("data:image/png;base64,{logo}");
+    # background-position: center 30px;
+    # background-repeat: no-repeat;
+    # background-size: 138px;
+    # position:relative;
+      
+    }}
+
+    [data-testid="stSidebarNav"] {{
+    background-image: url("data:image/png;base64,{logo}");
+    background-position: center 30px;
+    background-repeat: no-repeat;
+    background-size: 138px;
+    # position:relative;
+      
+    }}
+
+    [data-testid="baseButton-secondary"] {{
+    box-shadow: inset 0px -5px 5px 0px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(to bottom, rgb(143, 10, 86) ,rgb(168, 45, 97), rgb(143, 10, 86));
+
+    }}
+
+    [data-testid="baseButton-secondary"]:active {{
+    transform: translateY(1px);
+    #background-color: #230930;
+    box-shadow: inset 0px 10px 20px 2px rgba(0, 0, 0, 0.25);
+    }}
+
+    [data-testid="stImage"] {{
+    box-shadow: -5px -10px 10px rgba(0, 0, 0,0.5);
+    border-radius: 5px;
+    }}
+    </style>
+    """
+
+    st.markdown(page_bg_img, unsafe_allow_html=True)

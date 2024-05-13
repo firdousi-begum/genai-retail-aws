@@ -39,6 +39,58 @@ class CompletionDetails:
     latency: float = field(default=0.0)
 
 @define(kw_only=True)
+class BedrockService:
+    client: Any = field(default=boto3.client("bedrock"))
+
+    def get_model_list(
+        self,
+        provider= None,
+        customizationType=None,
+        outputModality=None,
+        inferenceType=None
+    ) -> List[Dict[str, Any]]:
+        model_info = []
+        # Initialize parameters dictionary
+        params = {}
+
+        if provider is not None:
+            params['byProvider'] = provider
+
+        if customizationType is not None:  # Corrected condition
+            params['byCustomizationType'] = customizationType
+
+        if outputModality is not None:
+            params['byOutputModality'] = outputModality
+
+        if inferenceType is not None:
+            params['byInferenceType'] = inferenceType
+
+        try:
+            response = self.client.list_foundation_models(**params)
+            model_summaries = response.get('modelSummaries', [])
+            for summary in model_summaries:
+                model_id = summary.get('modelId')
+                model_name = summary.get('modelName')
+                
+                # Split modelId by '-' and get the last part
+                last_substring = model_id.split('-')[-1]
+                
+                # Check if the last part starts with 'v'
+                if last_substring.startswith('v'):
+                    updated_model_name = f"{model_name} - {last_substring}"
+                else:
+                    updated_model_name = model_name
+                
+                model_info.append({'modelId': model_id, 'modelName': updated_model_name})
+            
+        except Exception:
+            raise 
+
+        return model_info
+        
+
+
+@define(kw_only=True)
 class BedrockFoundationModel:
     """Abstract class for all foundation models exposed via Bedrock
     To add a new FM, inherit from this class and implement the abstract methods
@@ -49,7 +101,7 @@ class BedrockFoundationModel:
     stop_words: List[str] = field(factory=list)
     extra_args: Dict[str, Any] = field(factory=dict)
     client: Any = field(default=boto3.client("bedrock-runtime"))
-
+  
     @abstractmethod
     def model_id(self) -> str:
         ...
@@ -225,6 +277,7 @@ class BedrockFoundationModel:
     @abstractmethod
     def get_text(self, body: Dict[str, Any]) -> str:
         ...
+    
 
 @define(kw_only=True)
 class BedrockEmbeddingsModel:
