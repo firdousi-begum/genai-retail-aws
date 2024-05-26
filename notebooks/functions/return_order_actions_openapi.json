@@ -1,0 +1,326 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AnyCompanyCommerce Return Order Agent API",
+    "description": "API for the AnyCompanyCommerce Shopping Agent to return orders",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/order/{orderId}/return": {
+      "post": {
+        "summary": "Returns the customer order",
+        "description": "Register return items request against order id",
+        "operationId": "returnOrder",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "description": "The ID of the order",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Order details and customer information",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnOrderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{orderId}/return/sendEmail": {
+      "post": {
+        "summary": "Send order return registration email",
+        "description": "Sends an order return registration email to the customer with the order details.",
+        "operationId": "sendOrderReturnEmail",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "description": "The ID of the order",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Email details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/user/{email}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "description": "Return an array of orders from a given user email",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "abc@def.com"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ReturnOrderRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "orderItems",
+          "firstName",
+          "lastName"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The email address of the customer"
+          },
+          "orderItems": {
+            "type": "array",
+            "description": "The list of order items",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": {
+                  "type": "string",
+                  "description": "The ID of the product"
+                },
+                "productName": {
+                  "type": "string",
+                  "description": "The name of the product"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "description": "The quantity of the product"
+                },
+                "price": {
+                  "type": "number",
+                  "description": "The price of the product"
+                }
+              },
+              "required": [
+                "productId",
+                "productName",
+                "quantity",
+                "price"
+              ]
+            }
+          },
+          "firstName": {
+            "type": "string",
+            "description": "The first name of the customer"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "The last name of the customer"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "description": "Details of an order",
+        "required": [
+          "items",
+          "shippingAddress"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "The list of order items",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "shippingAddress": {
+            "$ref": "#/components/schemas/ShippingAddress"
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "required": [
+          "productId",
+          "productName",
+          "quantity",
+          "price"
+        ],
+        "properties": {
+          "productId": {
+            "type": "string",
+            "description": "The ID of the product"
+          },
+          "productName": {
+            "type": "string",
+            "description": "The name of the product"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "The quantity of the product"
+          },
+          "price": {
+            "type": "number",
+            "description": "The price of the product"
+          }
+        }
+      },
+      "ShippingAddress": {
+        "type": "object",
+        "required": [
+          "firstName",
+          "lastName",
+          "address",
+          "city",
+          "zipCode",
+          "state",
+          "country"
+        ],
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "The first name of the customer"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "The last name of the customer"
+          },
+          "address": {
+            "type": "string",
+            "description": "The shipping address"
+          },
+          "city": {
+            "type": "string",
+            "description": "The city"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "The zip code"
+          },
+          "state": {
+            "type": "string",
+            "description": "The state"
+          },
+          "country": {
+            "type": "string",
+            "description": "The country"
+          }
+        }
+      },
+      "ReturnOrderResponse": {
+        "type": "object",
+        "properties": {
+          "referenceId": {
+            "type": "string",
+            "description": "The reference Id for return request"
+          },
+          "orderDetails": {
+            "$ref": "#/components/schemas/OrderDetails"
+          }
+        }
+      },
+      "OrderDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the order"
+          },
+          "email": {
+            "type": "string",
+            "description": "The email address of the customer"
+          },
+          "orderDate": {
+            "type": "string",
+            "description": "The date when the order is placed"
+          },
+          "order": {
+            "$ref": "#/components/schemas/Order"
+          },
+          "totalAmount": {
+            "type": "number",
+            "description": "The total amount of the order"
+          }
+        }
+      },
+      "SendEmailRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "emailBody"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The email address of the customer"
+          },
+          "emailBody": {
+            "type": "string",
+            "description": "The formatted email body"
+          }
+        }
+      }
+    }
+  }
+}
