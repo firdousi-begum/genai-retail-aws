@@ -1,8 +1,7 @@
 import boto3
 import json
-import time
-from langchain.llms.bedrock import Bedrock
-from langchain.chat_models.bedrock import BedrockChat
+from langchain_community.llms import Bedrock
+from langchain_community.chat_models.bedrock import BedrockChat
 from attrs import define, field, Factory
 from botocore.eventstream import EventStream
 from typing import Any, List, Dict, Iterable, Literal, overload, Callable

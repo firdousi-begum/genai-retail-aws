@@ -31,7 +31,6 @@ class BedrockAssistant():
         self.token_expiration = None
         self.boto3_bedrock = self.get_bedrock_client(
             region=self.b_region,
-            endpoint_url = f''
         )
         self.boto3_bedrock_agent = self.get_bedrock_agent_client(
             region=self.b_region,
@@ -93,7 +92,6 @@ class BedrockAssistant():
             session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
             #session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key}
         client_kwargs = {**session_kwargs}
-
 
         # profile_name = os.environ.get("AWS_PROFILE")
         # if profile_name:
@@ -194,7 +192,6 @@ class BedrockAssistant():
             session_kwargs = {"region_name": target_region, "aws_access_key_id" : aws_access_key_id, "aws_secret_access_key" : aws_secret_access_key, "aws_session_token": aws_session_token}
         client_kwargs = {**session_kwargs}
 
-
         # profile_name = os.environ.get("AWS_PROFILE")
         # if profile_name:
         #     print(f"  Using profile: {profile_name}")
@@ -236,7 +233,7 @@ class BedrockAssistant():
             **client_kwargs
         )
         
-        print("boto3 Bedrock client successfully created!")
+        print("boto3 Bedrock Agent client successfully created!")
         print(bedrock_client._endpoint)
         #print(bedrock_client.list_foundation_models())
         return bedrock_client
@@ -354,44 +351,57 @@ class BedrockAssistant():
        
         return outputImages
     
-    def invoke_agent(agent_id, agent_alias_id, session_id, prompt):
-    try:
-        client = boto3.session.Session().client(service_name="bedrock-agent-runtime")
-        # See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent-runtime/client/invoke_agent.html
-        response = client.invoke_agent(
-            agentId=agent_id,
-            agentAliasId=agent_alias_id,
-            enableTrace=True,
-            sessionId=session_id,
-            inputText=prompt,
-        )
+    def invoke_agent(self, agent_id, agent_alias_id, session_id, prompt):
+        try:
+            end_session:bool = False
 
-        output_text = ""
-        trace = {}
+            #self.logger.info(f'Request params:',agent_id, agent_alias_id, session_id, prompt)
+            
+            # See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent-runtime/client/invoke_agent.html
+            response = self.boto3_bedrock_agent.invoke_agent(
+                agentId=agent_id,
+                agentAliasId=agent_alias_id,
+                enableTrace=True,
+                sessionId=session_id,
+                inputText=prompt,
+            )
 
-        for event in response.get("completion"):
-            # Combine the chunks to get the output text
-            if "chunk" in event:
-                chunk = event["chunk"]
-                output_text += chunk["bytes"].decode()
+            output_text = ""
+            trace = {}
 
-            # Extract trace information from all events
-            if "trace" in event:
-                for trace_type in ["preProcessingTrace", "orchestrationTrace", "postProcessingTrace"]:
-                    if trace_type in event["trace"]["trace"]:
-                        if trace_type not in trace:
-                            trace[trace_type] = []
-                        trace[trace_type].append(event["trace"]["trace"][trace_type])
+            event_stream = response.get("completion")
+            try:
+                for event in event_stream:        
+                    if 'chunk' in event:
+                        data = event['chunk']['bytes']
+                        agent_answer = data.decode('utf8')
+                        # Combine the chunks to get the output text
+                        output_text += agent_answer
+                        end_event_received = True
+                        # End event indicates that the request finished successfully
+                    elif 'trace' in event:
+                            # Extract trace information from all events
+                        for trace_type in ["preProcessingTrace", "orchestrationTrace", "postProcessingTrace"]:
+                            #print(event)
+                            if trace_type in event["trace"]["trace"]:
+                                if trace_type not in trace:
+                                    trace[trace_type] = []
+                                trace[trace_type].append(event["trace"]["trace"][trace_type])
+                    else:
+                        raise Exception("unexpected event.", event)
+            except Exception as e:
+                raise Exception("unexpected event.", e)
 
-            # TODO: handle citations/references
 
-    except ClientError as e:
-        raise
+                # TODO: handle citations/references
 
-    return {
-        "output_text": output_text,
-        "trace": trace
-    }
+        except ClientError as e:
+            raise
+
+        return {
+            "output_text": output_text,
+            "trace": trace
+        }
 
 
     def get_text(self, prompt, modelId=None, generationConfig = None):

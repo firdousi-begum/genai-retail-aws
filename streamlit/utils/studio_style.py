@@ -190,6 +190,11 @@ def apply_studio_style():
                 box-shadow: -5px -10px 10px rgba(0, 0, 0,0.5);
                 background-color: #230930;
             }
+            code span {
+                white-space: pre-wrap;!important
+                word-break: break-all;
+                overflow-wrap: break-word;
+            }
 
         </style>
         """,
