@@ -351,7 +351,7 @@ class BedrockAssistant():
        
         return outputImages
     
-    def invoke_agent(self, agent_id, agent_alias_id, session_id, prompt):
+    def invoke_agent(self, agent_id, agent_alias_id, session_id, session_state, prompt):
         try:
             end_session:bool = False
 
@@ -364,6 +364,7 @@ class BedrockAssistant():
                 enableTrace=True,
                 sessionId=session_id,
                 inputText=prompt,
+                sessionState= session_state,
             )
 
             output_text = ""

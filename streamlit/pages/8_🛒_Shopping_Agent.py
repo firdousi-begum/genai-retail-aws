@@ -1,22 +1,38 @@
 import streamlit as st
 import os, json
+import re
+import pandas as pd
+from io import BytesIO
+import base64
 from utils import bedrock
 from utils.studio_style import apply_studio_style
 from utils.studio_style import keyword_label
 import uuid
 import logging
 import requests
+import pytz
+from datetime import datetime
 
+shopping_agent_id = os.environ.get("SHOPPING_AGENT_ID",'HZMODGWM3S')
+support_agent_id = os.environ.get("SUPPORT_AGENT_ID",'TZKMQFNMOE')
+agent_alias_id = os.environ.get("BEDROCK_AGENT_ALIAS_ID", "TSTALIASID") 
+
+agent_title = "🛍️AnyCompanyCommerce Shopping Agent"
+# Define the options for the dropdown
+agent_options = [
+    {"label": "Shopping Agent", "value": shopping_agent_id},
+    {"label": "Support Agent", "value": support_agent_id}
+]
 
 st.set_page_config(
-    page_title="AnyCompanyCommerce Shopping Agent",
+    page_title=f"AnyCompanyCommerce Shopping Agent",
     page_icon="🛍️",
 )
 
-agent_id = os.environ.get("BEDROCK_AGENT_ID",'2FGGBCRSFU')
-agent_alias_id = os.environ.get("BEDROCK_AGENT_ALIAS_ID", "TSTALIASID") 
 
 welcome_message = "Hello! Welcome to AnyCompanyCommerce. I'm your AI shopping assistant here to help you find products that match your needs and interests. How can I assist you today?"
+welcome_suppport_message = "Hello! Welcome to AnyCompanyCommerce. How can I assist you today with any questions or concerns regarding our policies or services?"
+
 
 @st.cache_resource(ttl=1800)
 def getAgentAssistant():
@@ -30,6 +46,23 @@ def init_state():
     st.session_state.email_confirmation=''
     st.session_state.agent_assistant = getAgentAssistant()
     st.session_state.messages.append({"role": "assistant", "content": welcome_message})
+    st.session_state.selected_product = None
+    st.session_state.answer = None
+
+    # Get the current time in the user's timezone
+    user_timezone = pytz.timezone("Europe/Stockholm")
+    current_time = datetime.now(user_timezone)
+    st.session_state.agent_session_state = {
+        "promptSessionAttributes": {
+            'firstName': 'John',
+            'currentDate': str(current_time),
+            'email': 'jonh.doe@xyz.com'
+        },
+        "sessionAttributes": {
+            'email': 'jonh.doe@xyz.com'
+        }
+    }
+
 
 @st.cache_resource(ttl=1800)
 def fetch_random_users(count):
@@ -41,9 +74,21 @@ def fetch_random_users(count):
     else:
         return []
 
-def GetAnswers(query, session_id, assistant):
+def get_product_details(product_id):
+    url = f"https://n6x93z1ekf.execute-api.us-west-2.amazonaws.com/products/id/{product_id}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        product = response.json()
+        return product
+    else:
+        return None
 
-    answer = assistant.invoke_agent(agent_id, agent_alias_id, session_id, query)
+def GetAnswers(query, session_id, assistant, agent_id, agent_session_state):
+
+    #answer= st.session_state.answer
+    #if  st.session_state.answer is None:
+    answer = assistant.invoke_agent(agent_id, agent_alias_id, session_id, agent_session_state, query)
+    st.session_state.answer = answer
 
     return answer
 
@@ -56,16 +101,43 @@ def extract_email_and_body(trace):
         return email, email_body
     return None, None
 
-def load_demo():
+def reformat_product_output(response):
+    products_match = re.search(r'<products>(.*?)</products>', response, re.DOTALL)
     
+    if products_match:
+        products_json = products_match.group(1)
+        try:
+            products = json.loads(products_json)
+        except json.JSONDecodeError:
+            st.error("Error parsing product data")
+            return response, None
+
+        # Remove the original <products> tag and its contents from the response
+        response = re.sub(r'<products>.*?</products>', '', response, flags=re.DOTALL)
+
+        return response.strip(), products
+    else:
+        return response, None
+
+
+def show_product(product):
+    print('test button click')
+    st.session_state.selected_product = product
+    user_query = f'View details for **{product['product_name']}**'
+    st.session_state.messages.append({"role": "user", "content": user_query})
+
+def load_demo():
+
     chat_container = st.container(height=350)
     
     for message in st.session_state.messages:
         # with st.chat_message(message["role"]):
-        chat_container.chat_message(message["role"]).markdown(message["content"])
+        chat_container.chat_message(message["role"]).markdown(message["content"], unsafe_allow_html=True)
+    
 
     user_query = st.chat_input(placeholder="Ask me anything!")
     if user_query:
+        st.session_state.selected_product = None
         st.session_state.messages.append({"role": "user", "content": user_query})
 
         # with st.chat_message("user"):
@@ -74,11 +146,93 @@ def load_demo():
         with chat_container.chat_message("assistant"):
             # Add a spinner to show loading state
             with st.spinner('...'):
-                response = GetAnswers(user_query, st.session_state.session_id, st.session_state.agent_assistant)
-                st.markdown( response["output_text"])
+                response = GetAnswers(user_query, st.session_state.session_id, st.session_state.agent_assistant, agent_option["value"], st.session_state.agent_session_state)
+                print(response["output_text"])
 
-                st.session_state.messages.append({"role": "assistant", "content": response["output_text"]})
+                #formatted_response, products = reformat_product_output(response["output_text"])
+                formatted_response, products = reformat_product_output(response["output_text"])
+                st.markdown(formatted_response, unsafe_allow_html=True)
+                if products:
+                    # Add a separator
+                    st.markdown("---")
+                    # Display the products as a list
+                    st.write("Suggested Products:")
+                    products_history= f""" """
+                    for i, product in enumerate(products, 1):
+                        products_history += f"""
+                        | <img src="{product["image_url"]}" width="100" alt="{product["product_name"]}"> | {i}. **{product["product_name"]}** |
+                        """
+
+                        col1, col2 = st.columns([1, 2])
+                        with col1:
+                            st.image(product['image_url'], width=100)
+                        with col2:
+                            st.write(f"{i}. {product['product_name']}")
+                            st.button(f"View Details", key=f"show_{product['product_id']}", on_click=show_product, args=(product,))
+
+                #st.markdown( response["output_text"])
+                #st.session_state.messages.append({"role": "assistant", "content": response["output_text"]})
+
+                st.session_state.messages.append({"role": "assistant", "content": formatted_response})
+                if products:
+                    st.session_state.messages.append({"role": "assistant", "content": products_history})
                 st.session_state.trace = response["trace"]
+
+    # Display selected product details
+    if st.session_state.selected_product:
+        product_id = st.session_state.selected_product['product_id']
+        with st.spinner('...'):
+            product = get_product_details(product_id)
+
+            print(product)
+
+            if product: 
+                with chat_container.chat_message("assistant"):         
+                    col1, col2 = st.columns([2, 1])
+                    with col1:
+                        st.image(product['image'], width=300)
+                        st.write(f"<small>{product['description']}</small>", unsafe_allow_html=True)
+                    with col2:
+                        st.write(f"#### {product['name']}")
+                        st.write(f"<small>Category: {product['category'].capitalize()} | Style: {product['style'].capitalize()}</small>", unsafe_allow_html=True)
+                        st.write(f"${product['price']:.2f}")
+                        if product['promoted'] == "True":
+                            st.write("🔥 **Promoted Item**")
+                        if product['current_stock'] > 0:
+                            if st.button("Buy Now", key=f"buy_{product['id']}"):
+                                st.success(f"{product['name']} added to cart!")
+                        else:
+                            st.write("**Out of Stock**")
+                        st.write(f"<small>Current Stock: {product['current_stock']} units</small>", unsafe_allow_html=True)
+
+
+                    if product['aliases']:
+                        st.write("<small>**Also known as:** " + ", ".join(product['aliases']) + "</small>", unsafe_allow_html=True)
+                    
+                    # Add exploration to message history
+                    selected_content = f"""
+                    <img src="{product['image']}" width="300" alt="{product['name']}"> 
+
+                    #### {product['name']}
+
+                    Category: {product['category'].capitalize()} | Style: {product['style'].capitalize()}  
+                    {'🔥 **Promoted Item**' if product['promoted'] == "True" else ''}
+
+                    Price: ${product['price']:.2f}
+
+                    Current Stock: {product['current_stock']} units
+
+                    Description: 
+                    {product['description']}
+                    """
+                    if product['aliases']:
+                        selected_content += f"\n\n**Also known as:** {', '.join(product['aliases'])}"
+                    
+                    st.session_state.messages.append({"role": "assistant", "content": selected_content})
+            else:
+                error = 'Apologies, there seems to be temporary issues in getting product details at the moment. Please try again later.'
+                st.session_state.messages.append({"role": "assistant", "content": error})
+            
 
 
 def load_trace():
@@ -163,7 +317,14 @@ def main():
 
     if st.session_state.email_confirmation:
         st.write(st.session_state.email_confirmation)
+    
+    if st.session_state.agent_session_state:
+        st.json(st.session_state.agent_session_state)
 
+agent_option = st.sidebar.selectbox("Select an agent", agent_options, format_func=lambda option: option["label"])
+if agent_option['label'] == "Support Agent":
+    agent_title = "👩‍💼AnyCompanyCommerce Support Agent"
+    welcome_message = welcome_suppport_message
 
 
 @st.cache_resource
@@ -177,7 +338,7 @@ def configure_logging():
 
 if __name__ == "__main__":
         
-    st.title("🛍️AnyCompanyCommerce Shopping Agent")
+    st.title(agent_title)
     
     modelId = 'anthropic.claude-instant-v1'
 
@@ -186,26 +347,6 @@ if __name__ == "__main__":
     st.write(' '.join(formatted_labels), unsafe_allow_html=True)
     apply_studio_style()
 
-    # # Add a description for this specific use case
-    # st.markdown(
-    #     '''
-    #     #### Agent Information:
-    #     ###### Welcome to the **Grocery Assistant**, your guide to planning and preparing a delicious dinner with ease. Imagine you are a valued customer of Cymbal Grocery, your favorite grocery store. You have a craving for a special dish, like lasagne, but you're not sure where to start or what ingredients you need. That's where our new conversational bot, GroceryBot, comes in!
-
-    #     **GroceryBot** is here to assist you at every step of your dinner journey:
-
-    #     1. **Suggesting a Recipe**: Simply tell GroceryBot the dish you'd like to cook, and it will recommend a delicious recipe for you to try. Try 'salad' or 'lasagne'
-
-    #     2. **Getting Ingredients and Cooking Instructions**: Once you've chosen a recipe, GroceryBot will provide you with a list of ingredients and clear cooking instructions.
-
-    #     3. **Suggesting Products**: GroceryBot will suggest products that you might want to buy for the chosen recipe, ensuring you have everything you need to cook your meal. Ask 'Help me find products to buy for the recipe'
-
-    #     4. **Buying Products**: GroceryBot can also help you order products. Ask 'Add the products to my cart'
-
-    #     5. **Finding New Products for Dinner**: In addition to your chosen recipe, GroceryBot can help you discover new and exciting products that would complement your dinner experience. Ask 'Do you have chocolate cake?'
-
-
-    #     ''')  
     
     if "logger" not in st.session_state:
         st.session_state.logger = configure_logging()
