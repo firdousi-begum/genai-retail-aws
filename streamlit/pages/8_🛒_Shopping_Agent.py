@@ -107,6 +107,10 @@ def extract_email_and_body(trace):
 
 def reformat_product_output(response):
     products_match = re.search(r'<products>(.*?)</products>', response, re.DOTALL)
+    related_products_match = re.search(r'<relatedProducts>(.*?)</relatedProducts>', response, re.DOTALL)
+
+    products = None
+    related_products = None
     
     if products_match:
         products_json = products_match.group(1)
@@ -114,14 +118,19 @@ def reformat_product_output(response):
             products = json.loads(products_json)
         except json.JSONDecodeError:
             st.error("Error parsing product data")
-            return response, None
+    
+    if related_products_match:
+        related_products_json = related_products_match.group(1)
+        try:
+            related_products = json.loads(related_products_json)
+        except json.JSONDecodeError:
+            st.error("Error parsing related product data")
 
-        # Remove the original <products> tag and its contents from the response
-        response = re.sub(r'<products>.*?</products>', '', response, flags=re.DOTALL)
+    # Remove both <products> and <relatedProducts> tags and their contents from the response
+    response = re.sub(r'<products>.*?</products>', '', response, flags=re.DOTALL)
+    response = re.sub(r'<relatedProducts>.*?</relatedProducts>', '', response, flags=re.DOTALL)
 
-        return response.strip(), products
-    else:
-        return response, None
+    return response.strip(), products, related_products
 
 
 def show_product(product):
@@ -241,7 +250,7 @@ def load_demo():
                 print(response["output_text"])
 
                 #formatted_response, products = reformat_product_output(response["output_text"])
-                formatted_response, products = reformat_product_output(response["output_text"])
+                formatted_response, products, related_products = reformat_product_output(response["output_text"])
                 st.markdown(formatted_response, unsafe_allow_html=True)
                 if products:
                     # Add a separator
@@ -261,6 +270,26 @@ def load_demo():
                             st.write(f"{i}. {product['product_name']}")
                             st.write(f"${product['price']}")
                             st.button(f"View Details", key=f"show_{product['product_id']}", on_click=show_product, args=(product,))
+                
+                if related_products:
+                    # Add a separator
+                    st.markdown("---")
+                    # Display the products as a list
+                    st.write("Products you might like:")
+                    related_products_history= f""" """
+                    for i, product in enumerate(related_products, 1):
+                        related_products_history += f"""
+                        | <img src="{product["image_url"]}" width="100" alt="{product["product_name"]}"> | {i}. **{product["product_name"]}** | Price: ${product["price"]} |
+                        """
+
+                        col1, col2 = st.columns([1, 2])
+                        with col1:
+                            st.image(product['image_url'])
+                        with col2:
+                            st.write(f"{i}. {product['product_name']}")
+                            st.write(f"${product['price']}")
+                            st.button(f"View Details", key=f"show_{product['product_id']}", on_click=show_product, args=(product,))
+
 
                 #st.markdown( response["output_text"])
                 #st.session_state.messages.append({"role": "assistant", "content": response["output_text"]})
@@ -268,6 +297,9 @@ def load_demo():
                 st.session_state.messages.append({"role": "assistant", "content": formatted_response})
                 if products:
                     st.session_state.messages.append({"role": "assistant", "content": products_history})
+                if related_products:
+                    st.session_state.messages.append({"role": "assistant", "content": related_products_history})
+
                 st.session_state.trace = response["trace"]
 
     if st.session_state.buy_product:
@@ -489,7 +521,7 @@ if __name__ == "__main__":
     with col2:
         if st.button("Clear message history"):
             init_state()
-            
+
     apply_studio_style()
 
     
